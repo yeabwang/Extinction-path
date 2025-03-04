@@ -7,6 +7,8 @@
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 #define PLAYER_SPEED 5
+#define BULLET_SPEED 10
+#define MAX_BULLETS 100
 
 typedef struct {
     float x, y;
@@ -14,6 +16,12 @@ typedef struct {
     bool isFiring;
     bool isCrouching;
 } Player;
+
+typedef struct {
+    float x, y;
+    float angle;
+    bool active;
+} Bullet;
 
 SDL_Texture* loadTexture(const char* path, SDL_Renderer* renderer) {
     SDL_Texture* texture = NULL;
@@ -27,16 +35,53 @@ SDL_Texture* loadTexture(const char* path, SDL_Renderer* renderer) {
     return texture;
 }
 
+void spawnBullet(Bullet bullets[], Player* player) {
+    for (int i = 0; i < MAX_BULLETS; i++) {
+        if (!bullets[i].active) {
+            bullets[i].x = player->x;
+            bullets[i].y = player->y;
+            bullets[i].angle = player->angle;
+            bullets[i].active = true;
+            break;
+        }
+    }
+}
+
+void updateBullets(Bullet bullets[]) {
+    for (int i = 0; i < MAX_BULLETS; i++) {
+        if (bullets[i].active) {
+            bullets[i].x += BULLET_SPEED * cos(bullets[i].angle * M_PI / 180);
+            bullets[i].y += BULLET_SPEED * sin(bullets[i].angle * M_PI / 180);
+
+            // Deactivate bullets that go off-screen
+            if (bullets[i].x < 0 || bullets[i].x > SCREEN_WIDTH || bullets[i].y < 0 || bullets[i].y > SCREEN_HEIGHT) {
+                bullets[i].active = false;
+            }
+        }
+    }
+}
+
+void renderBullets(SDL_Renderer* renderer, Bullet bullets[], SDL_Texture* bulletTexture) {
+    for (int i = 0; i < MAX_BULLETS; i++) {
+        if (bullets[i].active) {
+            SDL_Rect bulletRect = {bullets[i].x - 4, bullets[i].y - 4, 8, 8}; // Adjust size as needed
+            SDL_RenderCopyEx(renderer, bulletTexture, NULL, &bulletRect, bullets[i].angle, NULL, SDL_FLIP_NONE);
+        }
+    }
+}
+
 int main(int argc, char* argv[]) {
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("Run and Gun Shooter", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     Player player = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 0, false, false};
+    Bullet bullets[MAX_BULLETS] = {0}; // Initialize all bullets as inactive
 
     SDL_Texture* playerTexture = loadTexture("player.png", renderer); // Replace with your player sprite
-    if (playerTexture == NULL) {
-        printf("Failed to load player texture!\n");
+    SDL_Texture* bulletTexture = loadTexture("bullet.png", renderer); // Replace with your bullet sprite
+    if (playerTexture == NULL || bulletTexture == NULL) {
+        printf("Failed to load textures!\n");
         return -1;
     }
 
@@ -64,7 +109,10 @@ int main(int argc, char* argv[]) {
 
         // Firing
         if (keystate[SDL_SCANCODE_H] || keystate[SDL_SCANCODE_SPACE]) { // H or Space for firing
-            player.isFiring = true;
+            if (!player.isFiring) { // Prevent rapid firing
+                spawnBullet(bullets, &player);
+                player.isFiring = true;
+            }
         } else {
             player.isFiring = false;
         }
@@ -80,6 +128,9 @@ int main(int argc, char* argv[]) {
             player.angle = 0; // Point right
         }
 
+        // Update bullets
+        updateBullets(bullets);
+
         // Clear screen
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
@@ -93,11 +144,8 @@ int main(int argc, char* argv[]) {
         }
         SDL_RenderCopyEx(renderer, playerTexture, NULL, &playerRect, player.angle, NULL, SDL_FLIP_NONE);
 
-        // Render bullets or handle firing logic here
-        if (player.isFiring) {
-            // Add bullet spawning logic here
-            printf("Firing at angle: %.2f\n", player.angle); // Placeholder for firing logic
-        }
+        // Render bullets
+        renderBullets(renderer, bullets, bulletTexture);
 
         // Update screen
         SDL_RenderPresent(renderer);
@@ -106,6 +154,7 @@ int main(int argc, char* argv[]) {
 
     // Cleanup
     SDL_DestroyTexture(playerTexture);
+    SDL_DestroyTexture(bulletTexture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
