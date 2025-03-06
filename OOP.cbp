@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="OOP" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/OOP" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+					<Add directory="include" />
+				</Compiler>
+				<Linker>
+					<Add library="SDL2_mixer" />
+				</Linker>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/OOP" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add directory="include" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add directory="C:/msys64/mingw64/include/SDL2" />
+		</Compiler>
+		<Linker>
+			<Add option="-lmingw32 -lSDL2main -lSDL2 -lSDL2_image" />
+			<Add directory="C:/msys64/mingw64/lib" />
+		</Linker>
+		<Unit filename="Character.h" />
+		<Unit filename="Main.cpp" />
+		<Unit filename="include/Bomb.h" />
+		<Unit filename="include/Boss.h" />
+		<Unit filename="include/Bullet.h" />
+		<Unit filename="include/Button.h" />
+		<Unit filename="include/Enemy.h" />
+		<Unit filename="include/Game.h" />
+		<Unit filename="include/GameObjects.h" />
+		<Unit filename="include/GameScreen.h" />
+		<Unit filename="include/Health.h" />
+		<Unit filename="include/Helicopter.h" />
+		<Unit filename="include/Hero.h" />
+		<Unit filename="include/List.h" />
+		<Unit filename="include/LoadAndSave.h" />
+		<Unit filename="include/Menu.h" />
+		<Unit filename="include/Music.h" />
+		<Unit filename="include/Obstacles.h" />
+		<Unit filename="include/PauseScreen.h" />
+		<Unit filename="include/Point.h" />
+		<Unit filename="include/Screen.h" />
+		<Unit filename="include/Sound.h" />
+		<Unit filename="include/SoundEffects.h" />
+		<Unit filename="include/SplashScreen.h" />
+		<Unit filename="include/Sprites.h" />
+		<Unit filename="include/Tank.h" />
+		<Unit filename="include/WinScreen.h" />
+		<Unit filename="src/Bomb.cpp" />
+		<Unit filename="src/Boss.cpp" />
+		<Unit filename="src/Bullet.cpp" />
+		<Unit filename="src/Button.cpp" />
+		<Unit filename="src/Enemy.cpp" />
+		<Unit filename="src/Game.cpp" />
+		<Unit filename="src/GameObjects.cpp" />
+		<Unit filename="src/GameScreen.cpp" />
+		<Unit filename="src/Health.cpp" />
+		<Unit filename="src/Helicopter.cpp" />
+		<Unit filename="src/Hero.cpp" />
+		<Unit filename="src/List.cpp" />
+		<Unit filename="src/LoadAndSave.cpp" />
+		<Unit filename="src/Menu.cpp" />
+		<Unit filename="src/Music.cpp" />
+		<Unit filename="src/Obstacles.cpp" />
+		<Unit filename="src/PauseScreen.cpp" />
+		<Unit filename="src/Point.cpp" />
+		<Unit filename="src/Screen.cpp" />
+		<Unit filename="src/Sound.cpp" />
+		<Unit filename="src/SoundEffects.cpp" />
+		<Unit filename="src/SplashScreen.cpp" />
+		<Unit filename="src/Sprites.cpp" />
+		<Unit filename="src/Tank.cpp" />
+		<Unit filename="src/WinScreen.cpp" />
+		<Extensions />
+	</Project>
+</CodeBlocks_project_file>
