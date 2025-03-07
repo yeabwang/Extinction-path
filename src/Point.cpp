@@ -1,63 +1,53 @@
-#include "Point.h"  // Include the Point class header file
+#include "Point.h"
 
-// Default constructor for the Point class
 Point::Point()
 {
-    x = 0;  // Initialize x-coordinate to 0
-    y = 0;  // Initialize y-coordinate to 0
+    x = 0;
+    y = 0;
 }
 
-// Parameterized constructor for the Point class
+
 Point::Point(int x, int y)
 {
-    this->x = x;  // Initialize x-coordinate with the provided value
-    this->y = y;  // Initialize y-coordinate with the provided value
+    this->x = x;
+    this->y = y;
 }
 
-// Destructor for the Point class
 Point::~Point()
 {
-    // No dynamic memory to clean up, so the destructor is empty
+    //dtor
 }
-
-// Method to get the x-coordinate
 int Point::get_X() const
 {
-    return x;  // Return the x-coordinate
+    return x;
 }
-
-// Method to get the y-coordinate
-int Point::get_Y() const
+int  Point::get_Y() const
 {
-    return y;  // Return the y-coordinate
+    return y;
 }
-
-// Method to set the x-coordinate
 void Point::set_X(int X)
 {
-    x = X;  // Update the x-coordinate with the provided value
+    x=X;
 }
-
-// Method to set the y-coordinate
 void Point::set_Y(int Y)
 {
-    y = Y;  // Update the y-coordinate with the provided value
+    y=Y;
 }
 
-// Overloaded equality operator to compare two Point objects
-bool Point::operator==(const Point& p)
+bool Point:: operator==(const Point& p)
 {
-    if (this->x == p.x && this->y == p.y)  // Check if both coordinates are equal
-        return true;  // Return true if the points are equal
+    if(this->x==p.x && this->y == p.y)
+        return true;
 
-    return false;  // Return false if the points are not equal
+    return false;
 }
 
-// Overloaded output stream operator to print Point objects
-ostream& operator<<(ostream& o, const Point& p)
+
+ostream& operator<<(ostream& o,const Point& p)
 {
-    o << endl;  // Print a newline
-    o << "X: " << p.get_X() << endl;  // Print the x-coordinate
-    o << "Y: " << p.get_Y() << endl;  // Print the y-coordinate
-    return o;  // Return the output stream
+
+    o<<endl;
+    o<<"X: "<< p.get_X()<<endl;
+    o<<"Y: "<< p.get_Y()<<endl;
+    return o;
 }
