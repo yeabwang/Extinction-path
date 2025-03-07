@@ -15,9 +15,6 @@
 					<Add option="-g" />
 					<Add directory="include" />
 				</Compiler>
-				<Linker>
-					<Add library="SDL2_mixer" />
-				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/OOP" prefix_auto="1" extension_auto="1" />
@@ -39,6 +36,11 @@
 		</Compiler>
 		<Linker>
 			<Add option="-lmingw32 -lSDL2main -lSDL2 -lSDL2_image" />
+			<Add library="lmingw32" />
+			<Add library="lSDL2main" />
+			<Add library="lSDL2" />
+			<Add library="lSDL2_image" />
+			<Add library="lSDL2_mixer" />
 			<Add directory="C:/msys64/mingw64/lib" />
 		</Linker>
 		<Unit filename="Character.h" />

@@ -1,117 +1,110 @@
-#include "LoadAndSave.h"  // Include the LoadAndSave class header file
+#include "LoadAndSave.h"
 
-// Constructor for the LoadAndSave class
-LoadAndSave::LoadAndSave(Game* game, GameScreen* gamescreen, SDL_Window* window, SDL_Renderer* renderer)
+
+LoadAndSave::LoadAndSave(Game* game,GameScreen* gamescreen,SDL_Window* window,SDL_Renderer* renderer)
 {
-    this->gamescreen = gamescreen;  // Store the GameScreen pointer
-    this->game = game;             // Store the Game pointer
-    gRenderer = renderer;          // Store the SDL renderer pointer
-    gWindow = window;              // Store the SDL window pointer
+    this->gamescreen = gamescreen;
+    this->game = game;
+    gRenderer = renderer;
+    gWindow = window;
 }
 
-// Method to save game data to a file
 bool LoadAndSave::Save(List<GameObjects*>* list, string path)
 {
-    ofstream file(path.c_str());  // Open the file for writing
-    file << game;  // Save the game state
 
-    // Iterate through the list of game objects
+    ofstream file(path.c_str());
+    file<<game;
     Node<GameObjects*>* tempNode = list->getStart();
-    while (tempNode)
+    while(tempNode)
     {
-        GameObjects* obj = tempNode->value;  // Get the current game object
-
-        // Save the object based on its type
-        if (obj->getType() == "HERO")
+        GameObjects* obj = tempNode->value;
+        if(obj->getType()=="HERO")
         {
-            file << ((Hero*)obj);  // Save Hero object
+            file<<((Hero*) obj);
         }
-        else if (obj->getType() == "ENEMY")
+        else if(obj->getType()=="ENEMY")
         {
-            file << ((Enemy*)obj);  // Save Enemy object
+             file<<((Enemy*) obj);
         }
-        else if (obj->getType() == "TANK")
+        else if(obj->getType()=="TANK")
         {
-            file << ((Tank*)obj);  // Save Tank object
+             file<<((Tank*) obj);
         }
-        else if (obj->getType() == "HELICOPTER")
+        else if(obj->getType()=="HELICOPTER")
         {
-            file << ((Helicopter*)obj);  // Save Helicopter object
+             file<<((Helicopter*) obj);
         }
-        else if (obj->getType() == "BOSS")
+        else if(obj->getType()=="BOSS")
         {
-            file << ((Boss*)obj);  // Save Boss object
+             file<<((Boss*) obj);
         }
-        else if (obj->getType() == "OBSTACLE")
+        else if(obj->getType()=="OBSTACLE")
         {
-            file << ((Obstacles*)obj);  // Save Obstacle object
+             file<<((Obstacles*) obj);
         }
 
-        tempNode = tempNode->next;  // Move to the next object in the list
+        tempNode= tempNode->next;
     }
-
-    return true;  // Return true to indicate successful saving
+    return true;
 }
 
-// Method to load game data from a file
-bool LoadAndSave::Load(List<GameObjects*>* list, string path)
+bool LoadAndSave::Load(List<GameObjects*>* list,string path)
 {
-    string line = "";  // Temporary string for reading lines from the file
-    ifstream file(path.c_str());  // Open the file for reading
 
-    // Read the file line by line
-    while (getline(file, line))
+    string line="";
+    ifstream file(path.c_str());
+    while(getline(file,line))
     {
-        if (line == "---GAME---")  // Check if the line indicates game data
+        if(line=="---GAME---")
         {
-            file >> game;  // Load the game state
+            file>>game;
         }
-        else if (line == "---HERO---")  // Check if the line indicates Hero data
+        else if(line=="---HERO---")
         {
-            file >> (Hero*)(list->getStart())->value;  // Load Hero object
+            file>>(Hero*)(list->getStart())->value;
         }
-        else if (line == "---ENEMY---")  // Check if the line indicates Enemy data
+        else if(line=="---ENEMY---")
         {
-            // Create a new Enemy object and load its data
-            GameObjects* enemy = new Enemy(gWindow, gRenderer, 1000, list, 400);
-            file >> ((Enemy*)enemy);
-            list->add(enemy);  // Add the Enemy to the list
+
+            GameObjects* enemy = new Enemy(gWindow,gRenderer,1000,list,400);
+            file>>((Enemy*) enemy);
+            list->add(enemy);
         }
-        else if (line == "---TANK---")  // Check if the line indicates Tank data
+        else if(line=="---TANK---")
         {
-            // Create a new Tank object and load its data
-            GameObjects* tank = new Tank(gWindow, gRenderer, 1250, 500, list);
-            file >> ((Tank*)tank);
-            list->add(tank);  // Add the Tank to the list
+
+            GameObjects* tank = new Tank(gWindow,gRenderer,1250,500,list);
+            file>>((Tank*) tank);
+            list->add(tank);
         }
-        else if (line == "---HELICOPTER---")  // Check if the line indicates Helicopter data
+        else if(line=="---HELICOPTER---")
         {
-            // Create a new Helicopter object and load its data
-            GameObjects* helicopter = new Helicopter(gWindow, gRenderer, 100, 50, list);
-            file >> ((Helicopter*)helicopter);
-            list->add(helicopter);  // Add the Helicopter to the list
+            GameObjects* helicopter = new Helicopter(gWindow,gRenderer,100,50,list);
+            file>>((Helicopter*) helicopter);
+            list->add(helicopter);
         }
-        else if (line == "---BOSS---")  // Check if the line indicates Boss data
+        else if(line=="---BOSS---")
         {
-            // Create a new Boss object and load its data
-            GameObjects* boss = new Boss(gWindow, gRenderer, 10, 10, list);
-            file >> ((Boss*)boss);
-            list->add(boss);  // Add the Boss to the list
+            GameObjects* boss = new Boss(gWindow,gRenderer,10,10,list);
+            file>>((Boss*) boss);
+            list->add(boss);
         }
-        else if (line == "---OBSTACLE---")  // Check if the line indicates Obstacle data
+        else if(line=="---OBSTACLE---")
         {
-            // Create a new Obstacle object and load its data
-            GameObjects* obs = new Obstacles(gWindow, gRenderer, 1, "data\\Obstacles\\armyTruck.png", 1600, 500, 138, 71, 250, 150, gamescreen);
-            file >> ((Obstacles*)obs);
-            list->add(obs);  // Add the Obstacle to the list
+            GameObjects* obs = new Obstacles(gWindow,gRenderer,1,"data\\Obstacles\\armyTruck.png",1600,500,138,71,250,150,gamescreen);
+            file>>((Obstacles*) obs);
+            list->add(obs);
         }
+
     }
 
-    return true;  // Return true to indicate successful loading
+return true;
+
 }
 
-// Destructor for the LoadAndSave class
+
+
 LoadAndSave::~LoadAndSave()
 {
-    // No dynamic memory to clean up, so the destructor is empty
+
 }
