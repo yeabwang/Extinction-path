@@ -40,7 +40,7 @@ Game::Game(int width,int height,LoadandSave* file):WindowSize(width,height)
         cout<<x.w<<" , "<<x.h<<endl;
         x.w = 1440;
         x.h = 900;
-        gWindow = SDL_CreateWindow("Metal Slug",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,x.w,x.h,SDL_WINDOW_SHOWN); ///created window
+        gWindow = SDL_CreateWindow("Extinction path",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,x.w,x.h,SDL_WINDOW_SHOWN); ///created window
         gRenederer = SDL_CreateRenderer(gWindow,-1,SDL_RENDERER_PRESENTVSYNC); ///created renderer
         hero =  new  Hero(gWindow,gRenederer,&ListofObjects,this); ///created hero
         ListofObjects.add(hero);///added hero to the list
