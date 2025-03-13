@@ -17,6 +17,4 @@ class Screen
         }
 };
 
-
-
 #endif // SCREEN_H

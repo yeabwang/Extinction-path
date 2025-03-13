@@ -1,53 +1,41 @@
 #include "Point.h"
+#include <stdio.h> 
 
-Point::Point()
-{
+Point::Point() {
     x = 0;
     y = 0;
 }
 
-
-Point::Point(int x, int y)
-{
+Point::Point(int x, int y) {
     this->x = x;
     this->y = y;
 }
 
-Point::~Point()
-{
-    //dtor
+Point::~Point() {
+    // None
 }
-int Point::get_X() const
-{
+
+int Point::get_X() const {
     return x;
 }
-int  Point::get_Y() const
-{
+
+int Point::get_Y() const {
     return y;
 }
-void Point::set_X(int X)
-{
-    x=X;
-}
-void Point::set_Y(int Y)
-{
-    y=Y;
+
+void Point::set_X(int x) {
+    this->x = x;
 }
 
-bool Point:: operator==(const Point& p)
-{
-    if(this->x==p.x && this->y == p.y)
-        return true;
-
-    return false;
+void Point::set_Y(int y) {
+    this->y = y;
 }
 
+bool Point::equals(const Point& p) const {
+    return (this->x == p.x && this->y == p.y);
+}
 
-ostream& operator<<(ostream& o,const Point& p)
-{
-
-    o<<endl;
-    o<<"X: "<< p.get_X()<<endl;
-    o<<"Y: "<< p.get_Y()<<endl;
-    return o;
+void Point::print() const {
+    printf("X: %d\n", x);
+    printf("Y: %d\n", y);
 }

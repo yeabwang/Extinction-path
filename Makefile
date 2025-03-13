@@ -12,8 +12,8 @@ BIN_DIR := bin
 SRCS := Main.cpp $(wildcard $(SRC_DIR)/*.cpp) Utilities.cpp
 
 # Targets
-TARGET_DEBUG := $(BIN_DIR)/Debug/OOP.exe
-TARGET_RELEASE := $(BIN_DIR)/Release/OOP.exe
+TARGET_DEBUG := $(BIN_DIR)/Debug/Extinction.exe
+TARGET_RELEASE := $(BIN_DIR)/Release/Extinction.exe
 
 # Source files
 SRCS := Main.cpp $(wildcard $(SRC_DIR)/*.cpp)

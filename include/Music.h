@@ -1,23 +1,22 @@
 #ifndef MUSIC_H
 #define MUSIC_H
-#include "Sound.h"
-#include "SDL_mixer.h"
 
-class Music: public Sound
-{
-    public:
-        Music(string path);
-        Music(const& Music) = delete;///deleted this because we won't make any copy
-        Music& operator=(const& Music) = delete;///deleted this because we won't make any assignment
-        Music()=delete;///deleted this because we will always use overloaded constructor
-        void Play(int loop=-1);
-        void Pause();
-        void Resume();
-        virtual ~Music();
-    protected:
+#include "Sound.h" 
+#include <SDL_mixer.h> 
+#include <stdio.h> 
 
-    private:
-        Mix_Music* music;
+class Music : public Sound {
+public:
+    Music(const char* path); 
+    Music(const Music&) = delete; 
+    Music& operator=(const Music&) = delete; 
+    void Play(int loop = -1);
+    void Pause();
+    void Resume();
+    virtual ~Music();
+
+private:
+    Mix_Music* music;
 };
 
 #endif // MUSIC_H

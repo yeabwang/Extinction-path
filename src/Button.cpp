@@ -1,59 +1,53 @@
 #include "Button.h"
 #include <cstdlib>
+#include <cstring>
 
-Button::Button(SDL_Renderer* gRenderer,SDL_Window* gWindow,string path,Point position,Point size)
+Button::Button(SDL_Renderer* gRenderer, SDL_Window* gWindow, const char* path, Point position, Point size)
 {
     Size.set_X(size.get_X());
     Size.set_Y(size.get_Y());
     Position.set_X(position.get_X());
     Position.set_Y(position.get_Y());
-    this-> listOfSprites = new Sprites*[3]{NULL};
+    this->listOfSprites = new Sprites * [3]{ NULL };
     this->sound[0] = new SoundEffects("data\\Buttons\\Sounds\\Click.wav");
     this->sound[1] = new SoundEffects("data\\Buttons\\Sounds\\focus.wav");
-    this-> clicked = false;
+    this->clicked = false;
 
-    /// we loading all three states of the button
-    string num="012";int nc=0;
-    for (int i=0;i<3;i++)
+    // Load all three states of the button
+    char num[] = "012";
+    char modifiedPath[256];
+    for (int i = 0; i < 3; i++)
     {
-        int j=0;
-        while(path[j])
+        strcpy(modifiedPath, path);
+        char* dot = strrchr(modifiedPath, '.');
+        if (dot)
         {
-            if (path[j]=='.')
-            {
-                path[j-1] = num[nc];
-                nc+=1;
-                break;
-            }
-            j++;
+            *(dot - 1) = num[i];
         }
-        this->listOfSprites[i] = new Sprites(gWindow,gRenderer,path,1,position.get_X(),position.get_Y(),size.get_X(),size.get_Y(),size.get_X(),size.get_Y(),"Button",true);
-
+        this->listOfSprites[i] = new Sprites(gWindow, gRenderer, modifiedPath, 1, position.get_X(), position.get_Y(), size.get_X(), size.get_Y(), size.get_X(), size.get_Y(), "Button", true);
     }
-
-
 }
 
- bool Button::IsClicked(SDL_Event* e)
+bool Button::IsClicked(SDL_Event* e)
 {
     clicked = false;
-    static bool down=false;
+    static bool down = false;
+
     if (e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP || e->type == SDL_MOUSEMOTION)
     {
+        bool inRange = false;
+        int mX = 0;
+        int mY = 0;
+        SDL_GetMouseState(&mX, &mY);
 
-        bool inRange=false;
-        int mX=0;
-        int mY=0;
-        SDL_GetMouseState(&mX,&mY);
-        if ((Position.get_X()<=mX && Size.get_X()+Position.get_X()>=mX) && ((Position.get_Y()<=mY && Size.get_Y()+Position.get_Y()>=mY)))
+        if ((Position.get_X() <= mX && Size.get_X() + Position.get_X() >= mX) &&
+            ((Position.get_Y() <= mY && Size.get_Y() + Position.get_Y() >= mY)))
         {
-            if(!In_Focus)
-                {
-                    In_Focus = true;
-                    sound[1]->Play();
-                }
-
-
+            if (!In_Focus)
+            {
+                In_Focus = true;
+                sound[1]->Play();
+            }
             inRange = true;
             cs = 2;
         }
@@ -61,8 +55,9 @@ Button::Button(SDL_Renderer* gRenderer,SDL_Window* gWindow,string path,Point pos
         {
             In_Focus = false;
             inRange = false;
-            cs=0;
+            cs = 0;
         }
+
         if (e->button.button == SDL_BUTTON_LEFT)
         {
             if (e->type == SDL_MOUSEBUTTONDOWN && inRange)
@@ -72,7 +67,6 @@ Button::Button(SDL_Renderer* gRenderer,SDL_Window* gWindow,string path,Point pos
             }
             else if (e->type == SDL_MOUSEBUTTONUP && inRange)
             {
-
                 cs = 2;
                 down = false;
                 if (inRange)
@@ -81,43 +75,34 @@ Button::Button(SDL_Renderer* gRenderer,SDL_Window* gWindow,string path,Point pos
                     sound[0]->Play();
                 }
             }
-            else if(down && inRange)
+            else if (down && inRange)
             {
                 cs = 1;
             }
         }
     }
-     return clicked;
-
+    return clicked;
 }
 
-
-void  Button::Render()
+void Button::Render()
 {
-
-        this->listOfSprites[cs]->render();
+    this->listOfSprites[cs]->render();
 }
 
 void Button::UnClick()
 {
-
     clicked = false;
 }
 
-
 Button::~Button()
 {
-    for(int i=0;i<3;i++)
+    for (int i = 0; i < 3; i++)
     {
         delete listOfSprites[i];
     }
-    for(int i=0;i<2;i++)
+    for (int i = 0; i < 2; i++)
     {
         delete sound[i];
     }
-    delete [] listOfSprites;
+    delete[] listOfSprites;
 }
-
-
-
-

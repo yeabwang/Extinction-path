@@ -1,10 +1,14 @@
 #include "Game.h"
-#include "cstdlib"
+#include <cstdlib>
+#include <ctime>
+#include <cstdio> 
+#include <cstring> 
+
 #include "GameScreen.h"
 #include "Sprites.h"
 #include "Button.h"
 #include "GameObjects.h"
-#include "../Character.h"
+#include "Character.h"
 #include "Obstacles.h"
 #include "Hero.h"
 #include "SoundEffects.h"
@@ -17,9 +21,8 @@
 #include "Tank.h"
 #include "Helicopter.h"
 #include "Boss.h"
-#include "ctime"
 #include "PauseScreen.h"
-#include "Missions.h" // Include the header, not the .cpp file
+#include "Missions.h"
 
 bool jump = false;
 int j_loop = 0;
@@ -32,65 +35,81 @@ Game::Game(int width, int height, LoadandSave* file) : WindowSize(width, height)
     counter = 0;
     Quit = false;
     File = file;
-    if (Initialize_components() == true) /// Initializing SDL!
+    roundScreenShown = false;
+    free = false;
+    Current_Stage = 1000; 
+    EnemyKillCount = 0;
+    OnScreenEnemies = 0;
+    TankKilled = false;
+    TankGenerated = false;
+    HelicopterKilled = false;
+    HelicopterGenerated = false;
+    FinalEnemiesGenerated = false;
+    BossGenerated = false;
+
+    if (Initialize_components()) 
     {
         SDL_Rect x;
-        screen = x;
-        // SDL_GetDisplayBounds(0, &x);
-        cout << x.w << " , " << x.h << endl;
+        screen = x; // Note: This copies an uninitialized SDL_Rect; we'll fix this
         x.w = 1440;
         x.h = 900;
-        gWindow = SDL_CreateWindow("Extinction path", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, x.w, x.h, SDL_WINDOW_SHOWN); /// Created window
-        gRenederer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_PRESENTVSYNC); /// Created renderer
-        hero = new Hero(gWindow, gRenederer, &ListofObjects, this); /// Created hero
-        ListofObjects.add(hero); /// Added hero to the list
-        splashScreen = new SplashScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\splash1.png", x.w, x.h); /// Created Splash Screen
-        win = new WinScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\win.png", x.w, x.h); /// Created win screen
-        lose = new WinScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\lose.png", x.w, x.h); /// Created lose screen
-        menu = new Menu(&e, gWindow, gRenederer, "data\\SplashScreen\\menu.png", x.w, x.h); /// Created menu screen
-        gs = new GameScreen(&e, gWindow, gRenederer, "data\\Backgrounds\\main.png", x.w, x.h, (Hero*)hero, &ListofObjects); /// Created game screen
-        pauseScreen = new PauseScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\menu.png", x.w, x.h); /// Created pause screen
-        missions = new Missions(&e, gWindow, gRenederer, "data\\Backgrounds\\main.png", x.w, x.h); /// Created Missions screen
-        themeMusic = new Music("theme.mp3"); /// Created theme music
-        splashScreen->setEnabled(true); /// Enabled Splash screen
-        themeMusic->Play(); /// Playing game music
+        screen.w = x.w; // set dimensions
+        screen.h = x.h;
+        screen.x = 0;   // Initialize position
+        screen.y = 0;
+
+        gWindow = SDL_CreateWindow("Extinction path", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, x.w, x.h, SDL_WINDOW_SHOWN);
+        if (gWindow == NULL) {
+            printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+            return;
+        }
+
+        gRenederer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_PRESENTVSYNC);
+        if (gRenederer == NULL) {
+            printf("Renderer could not be created! SDL_Error: %s\n", SDL_GetError());
+            return;
+        }
+
+        hero = new Hero(gWindow, gRenederer, &ListofObjects, this);
+        ListofObjects.add(hero);
+
+        splashScreen = new SplashScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\splash1.png", x.w, x.h);
+        win = new WinScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\win.png", x.w, x.h);
+        lose = new WinScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\lose.png", x.w, x.h);
+        menu = new Menu(&e, gWindow, gRenederer, "data\\SplashScreen\\menu.png", x.w, x.h);
+        gs = new GameScreen(&e, gWindow, gRenederer, "data\\Backgrounds\\main.png", x.w, x.h, (Hero*)hero, &ListofObjects);
+        pauseScreen = new PauseScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\menu.png", x.w, x.h);
+        missions = new Missions(&e, gWindow, gRenederer, "data\\Backgrounds\\main.png", x.w, x.h);
+        themeMusic = new Music("theme.mp3");
+
+        splashScreen->setEnabled(true);
+        themeMusic->Play();
 
         while (!Quit)
         {
-            /// Event loop
             while (SDL_PollEvent(&e))
             {
                 EventController();
                 if (e.type == SDL_QUIT)
                     Quit = true;
                 if (ListofObjects.getStart() != NULL && gs->IsEnable())
-                    ((Character*)hero)->EventsController(&e); /// Hero's event controller
+                    ((Character*)hero)->EventsController(&e);
             }
-            /// Clear renderer
+
             SDL_SetRenderDrawColor(gRenederer, 255, 255, 255, 255);
             SDL_RenderClear(gRenederer);
-            /// Looking for enabled window
+
             if (win->IsEnable())
-            {
                 win->Render();
-            }
             else if (lose->IsEnable())
-            {
                 lose->Render();
-            }
             else if (pauseScreen->IsEnable())
-            {
                 pauseScreen->Render();
-            }
             else if (menu->IsEnable())
-            {
                 menu->Render();
-            }
             else if (missions->IsEnable())
-            {
                 missions->Render();
-            }
-            else if ((gs->IsEnable()))
+            else if (gs->IsEnable())
             {
                 gs->Render();
                 GameLogic();
@@ -100,18 +119,26 @@ Game::Game(int width, int height, LoadandSave* file) : WindowSize(width, height)
                     counter = 0;
             }
             else if (splashScreen->IsEnable())
-            {
                 splashScreen->Render();
-            }
+
             SDL_RenderPresent(gRenederer);
         }
-        /// Saving the game if user quits.
+
         SaveGame();
     }
     else
     {
-        cout << "Game Cannot be started!\n" << endl;
+        printf("Game Cannot be started!\n");
     }
+}
+
+bool Game::Initialize_components()
+{
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+        printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+        return false;
+    }
+    return true;
 }
 
 void Game::SaveGame()
@@ -126,43 +153,33 @@ void Game::LoadGame()
     file.Load(&ListofObjects, "data//files//Saved.txt");
 }
 
-ofstream& operator<<(ofstream& file, Game* game)
+void SaveGameToFile(FILE* file, Game* game)
 {
-    file << "---GAME---" << endl;
-    file << game->EnemyKillCount << endl;
-    file << game->OnScreenEnemies << endl;
-    file << game->TankKilled << endl;
-    file << game->TankGenerated << endl;
-    file << game->HelicopterKilled << endl;
-    file << game->HelicopterGenerated << endl;
-    file << game->FinalEnemiesGenerated << endl;
-    file << game->BossGenerated << endl;
-    file << game->Current_Stage << endl;
-    return file;
+    fprintf(file, "---GAME---\n");
+    fprintf(file, "%d\n", game->EnemyKillCount);
+    fprintf(file, "%d\n", game->OnScreenEnemies);
+    fprintf(file, "%d\n", game->TankKilled ? 1 : 0);
+    fprintf(file, "%d\n", game->TankGenerated ? 1 : 0);
+    fprintf(file, "%d\n", game->HelicopterKilled ? 1 : 0);
+    fprintf(file, "%d\n", game->HelicopterGenerated ? 1 : 0);
+    fprintf(file, "%d\n", game->FinalEnemiesGenerated ? 1 : 0);
+    fprintf(file, "%d\n", game->BossGenerated ? 1 : 0);
+    fprintf(file, "%d\n", game->Current_Stage);
 }
 
-ifstream& operator>>(ifstream& file, Game* game)
+void LoadGameFromFile(FILE* file, Game* game)
 {
-    string str;
-    file >> str;
-    game->EnemyKillCount = atoi(str.c_str());
-    file >> str;
-    game->OnScreenEnemies = atoi(str.c_str());
-    file >> str;
-    game->TankKilled = atoi(str.c_str());
-    file >> str;
-    game->TankGenerated = atoi(str.c_str());
-    file >> str;
-    game->HelicopterKilled = atoi(str.c_str());
-    file >> str;
-    game->HelicopterGenerated = atoi(str.c_str());
-    file >> str;
-    game->FinalEnemiesGenerated = atoi(str.c_str());
-    file >> str;
-    game->BossGenerated = atoi(str.c_str());
-    file >> str;
-    game->Current_Stage = atoi(str.c_str());
-    return file;
+    int tempInt;
+    fscanf(file, "%*s"); // Skip the first line
+    fscanf(file, "%d", &game->EnemyKillCount);
+    fscanf(file, "%d", &game->OnScreenEnemies);
+    fscanf(file, "%d", &tempInt); game->TankKilled = (tempInt != 0);
+    fscanf(file, "%d", &tempInt); game->TankGenerated = (tempInt != 0);
+    fscanf(file, "%d", &tempInt); game->HelicopterKilled = (tempInt != 0);
+    fscanf(file, "%d", &tempInt); game->HelicopterGenerated = (tempInt != 0);
+    fscanf(file, "%d", &tempInt); game->FinalEnemiesGenerated = (tempInt != 0);
+    fscanf(file, "%d", &tempInt); game->BossGenerated = (tempInt != 0);
+    fscanf(file, "%d", &game->Current_Stage);
 }
 
 void Game::GameLogic()
@@ -173,17 +190,16 @@ void Game::GameLogic()
         {
             if (!roundScreenShown) // Only show the round screen if it hasn't been shown yet
             {
-                // Show the round screen for Round 1
                 missions->setRoundNumber(1);
                 missions->setEnabled(true);
                 gs->setEnabled(false);
-                roundScreenShown = true; // Mark the round screen as shown
+                roundScreenShown = true;
             }
 
             if (rand() % 3 == 0)
             {
                 ListofObjects.add(new Obstacles(gWindow, gRenederer, 1, "data\\Obstacles\\armyTruck.png", screen.w * 1.111, screen.h * 0.555, 138, 71, screen.w * 0.173, screen.h * 0.166, this->gs));
-                cout << screen.w * 1.111 << " " << screen.h * 0.555 << endl;
+                printf("%f %f\n", screen.w * 1.111, screen.h * 0.555);
             }
             ListofObjects.add(new Enemy(gWindow, gRenederer, 1840, &ListofObjects, 150));
             ListofObjects.add(new Enemy(gWindow, gRenederer, 2040, &ListofObjects, 100));
@@ -193,17 +209,16 @@ void Game::GameLogic()
     else if (Current_Stage == 1000)
     {
         free = false;
-        roundScreenShown = false; // Reset the flag for the next round
+        roundScreenShown = false;
     }
     else if (!TankGenerated && Current_Stage == 2000)
     {
-        if (!roundScreenShown) // Only show the round screen if it hasn't been shown yet
+        if (!roundScreenShown)
         {
-            // Show the round screen for Round 2
             missions->setRoundNumber(2);
             missions->setEnabled(true);
             gs->setEnabled(false);
-            roundScreenShown = true; // Mark the round screen as shown
+            roundScreenShown = true;
         }
 
         ListofObjects.add(new Tank(gWindow, gRenederer, 1250, 500, &ListofObjects));
@@ -212,17 +227,16 @@ void Game::GameLogic()
     else if (TankKilled && Current_Stage == 2000)
     {
         free = false;
-        roundScreenShown = false; // Reset the flag for the next round
+        roundScreenShown = false;
     }
     else if (TankKilled && !HelicopterGenerated && Current_Stage == 3000)
     {
-        if (!roundScreenShown) // Only show the round screen if it hasn't been shown yet
+        if (!roundScreenShown)
         {
-            // Show the round screen for Round 3
             missions->setRoundNumber(3);
             missions->setEnabled(true);
             gs->setEnabled(false);
-            roundScreenShown = true; // Mark the round screen as shown
+            roundScreenShown = true;
         }
 
         ListofObjects.add(new Helicopter(gWindow, gRenederer, 1440, 50, &ListofObjects));
@@ -231,11 +245,10 @@ void Game::GameLogic()
     else if (HelicopterKilled && Current_Stage == 3000)
     {
         free = false;
-        roundScreenShown = false; // Reset the flag for the next round
+        roundScreenShown = false;
     }
     else if (HelicopterKilled && !FinalEnemiesGenerated)
     {
-        // Show the test round screen
         ListofObjects.add(new Enemy(gWindow, gRenederer, 1840, &ListofObjects, 200));
         ListofObjects.add(new Enemy(gWindow, gRenederer, 2040, &ListofObjects, 100));
         ListofObjects.add(new Enemy(gWindow, gRenederer, 2300, &ListofObjects, 150));
@@ -258,9 +271,9 @@ void Game::ObjectsManager()
     while (temNode)
     {
         GameObjects* obj = temNode->value;
-        if ((obj)->IsAlive())
+        if (obj->IsAlive())
         {
-            if (obj->getType() == "TANK")
+            if (strcmp(obj->getType(), "TANK") == 0)
             {
                 ListofObjects.HasTank = true;
             }
@@ -268,28 +281,28 @@ void Game::ObjectsManager()
             Node<GameObjects*>* tNode = ListofObjects.getStart();
             while (tNode)
             {
-                (obj)->CollisionImpact(tNode->value);
+                obj->CollisionImpact(tNode->value);
                 tNode = tNode->next;
             }
-            (obj)->render(counter);
+            obj->render(counter);
             temNode = temNode->next;
         }
         else
         {
-            if (obj->getType() == "ENEMY")
+            if (strcmp(obj->getType(), "ENEMY") == 0)
             {
                 EnemyKillCount += 1;
                 OnScreenEnemies -= 1;
             }
-            else if (obj->getType() == "TANK")
+            else if (strcmp(obj->getType(), "TANK") == 0)
             {
                 TankKilled = true;
             }
-            else if (obj->getType() == "HELICOPTER")
+            else if (strcmp(obj->getType(), "HELICOPTER") == 0)
             {
                 HelicopterKilled = true;
             }
-            if (obj->getType() == "BOSS")
+            if (strcmp(obj->getType(), "BOSS") == 0)
             {
                 EnemyKillCount = 0;
                 OnScreenEnemies = 0;
@@ -305,7 +318,7 @@ void Game::ObjectsManager()
                 ListofObjects.freeMemory();
                 temNode = NULL;
             }
-            else if (obj->getType() == "HERO")
+            else if (strcmp(obj->getType(), "HERO") == 0)
             {
                 gs->setEnabled(false);
                 lose->setEnabled(true);
@@ -340,8 +353,8 @@ void Game::ObjectsManager()
                 }
                 else
                 {
-                    (temNode->next)->previous = temNode->previous;
-                    (temNode->previous)->next = temNode->next;
+                    temNode->next->previous = temNode->previous;
+                    temNode->previous->next = temNode->next;
                     delete obj;
                     temNode = temNode->next;
                     delete toBeDeleted;
@@ -448,4 +461,8 @@ Game::~Game()
     delete pauseScreen;
     delete missions;
     delete themeMusic;
+
+    SDL_DestroyRenderer(gRenederer);
+    SDL_DestroyWindow(gWindow);
+    SDL_Quit();
 }
