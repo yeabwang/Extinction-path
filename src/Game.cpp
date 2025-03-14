@@ -69,6 +69,7 @@ Game::Game(int width, int height, LoadandSave* file) : WindowSize(width, height)
             printf("Renderer could not be created! SDL_Error: %s\n", SDL_GetError());
             return;
         }
+    
 
         hero = new Hero(gWindow, gRenederer, &ListofObjects, this);
         ListofObjects.add(hero);

@@ -28,6 +28,7 @@ debug: CXXFLAGS += -g
 debug: $(TARGET_DEBUG)
 
 $(TARGET_DEBUG): $(OBJS_DEBUG)
+
 	@echo "Linking Debug Build..."
 	@if not exist "$(BIN_DIR)/Debug" mkdir "$(BIN_DIR)/Debug"
 	@echo "Linking files into $(TARGET_DEBUG)..."
