@@ -18,6 +18,7 @@ Hero::Hero(SDL_Window* gWindow, SDL_Renderer* grenderer, List<GameObjects*>* lst
     HeroStates[0] = new Sprites(gWindow, grenderer, "data\\hero\\standing.png", 30, 1200 / 30, 44, dRect, "data\\hero\\standing.png", true);
     HeroStates[2] = new Sprites(gWindow, grenderer, "data\\hero\\fire.png", 13, 4000 / 13, 191, dRect, "data\\hero\\standing.png", true);
     HeroStates[3] = new Sprites(gWindow, grenderer, "data\\hero\\fireUp.png", 9, 810 / 9, 118, dRect, "data\\hero\\standing.png", true);
+    HeroStates[4] = new Sprites(gWindow, grenderer, "data\\hero\\sliding.png", 8, 400 / 8, 50, dRect, "data\\hero\\standing.png", true); // Sliding animation
 
     ground = dRect->y + dRect->h;
     flip = SDL_FLIP_NONE; // Initialize
@@ -33,6 +34,9 @@ Hero::Hero(SDL_Window* gWindow, SDL_Renderer* grenderer, List<GameObjects*>* lst
     movex = 0;
     onground = true;
     cs = 0;
+    sliding = false; // Initialize sliding state
+    jumpCount = 0;   // Initialize jump count
+    slideCooldown = 0; // Initialize slide cooldown
 
     printf("Position: (%d, %d), Size: (%d, %d)\n", get_Position().get_X(), get_Position().get_Y(), get_Size().get_X(), get_Size().get_Y());
 }
@@ -103,7 +107,12 @@ void Hero::render(int frames)
 
     if (Alive)
     {
-        if (!fire)
+        if (sliding)
+        {
+            cs = 4; // Sliding animation state
+            HeroStates[cs]->render(frames, flip);
+        }
+        else if (!fire)
         {
             if (movex != 0 || movey != 0 || running)
             {
@@ -156,13 +165,44 @@ void Hero::EventsController(SDL_Event* e)
     }
     const Uint8* currentKeyStates = SDL_GetKeyboardState(NULL);
 
-    // Jump with Space Bar
+    // Sliding with Ctrl key
+    if (currentKeyStates[SDL_SCANCODE_LCTRL] || currentKeyStates[SDL_SCANCODE_RCTRL])
+    {
+        if (onground && !sliding && slideCooldown == 0)
+        {
+            sliding = true;
+            slideCooldown = 60; // Set a cooldown for sliding (adjust as needed)
+            movex *= 2; // Increase horizontal speed while sliding
+        }
+    }
+    else
+    {
+        sliding = false;
+    }
+
+    // Decrease slide cooldown
+    if (slideCooldown > 0)
+    {
+        slideCooldown--;
+    }
+
+    // Jump with Space Bar (double jump)
     if (currentKeyStates[SDL_SCANCODE_SPACE])
     {
-        if (!jumping)
+        if (jumpCount < 2) // Allow double jump
         {
-            jump = true; movey = -30; jumping = true; onground = false;
+            jump = true;
+            movey = -30;
+            jumping = true;
+            onground = false;
+            jumpCount++;
         }
+    }
+
+    // Reset jump count when on ground
+    if (onground)
+    {
+        jumpCount = 0;
     }
 
     // Move left with A
@@ -421,27 +461,4 @@ void LoadHeroFromFile(FILE* file, Hero* hero)
     fscanf(file, "%d", &hero->count);
     fscanf(file, "%d", &temp); hero->shootUp = (temp != 0);
     fscanf(file, "%d", &temp); hero->fire = (temp != 0);
-    fscanf(file, "%d", &temp); hero->jump = (temp != 0);
-    fscanf(file, "%d", &temp); hero->jumping = (temp != 0);
-    fscanf(file, "%d", &hero->movey);
-    fscanf(file, "%d", &hero->movex);
-    fscanf(file, "%d", &temp); hero->onground = (temp != 0);
-    fscanf(file, "%d", &hero->ground);
-    fscanf(file, "%d", &hero->cs);
-    fscanf(file, "%d", &hero->dRect->x);
-    fscanf(file, "%d", &hero->dRect->y);
-    fscanf(file, "%d", &temp); hero->health.set_Health(temp); // Use setter
-}
-
-Hero::~Hero()
-{
-    for (int i = 0; i < 2; i++)
-    {
-        delete sound[i];
-    }
-    for (int i = 0; i < 4; i++)
-    {
-        delete HeroStates[i];
-    }
-    delete dRect;
-}
+    fscanf(file, "%d", &temp); hero->jump = (temp
