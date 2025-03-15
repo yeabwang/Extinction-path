@@ -74,13 +74,13 @@ Game::Game(int width, int height, LoadandSave* file) : WindowSize(width, height)
         hero = new Hero(gWindow, gRenederer, &ListofObjects, this);
         ListofObjects.add(hero);
 
-        splashScreen = new SplashScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\splash1.png", x.w, x.h);
-        win = new WinScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\win.png", x.w, x.h);
-        lose = new WinScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\lose.png", x.w, x.h);
-        menu = new Menu(&e, gWindow, gRenederer, "data\\SplashScreen\\menu.png", x.w, x.h);
-        gs = new GameScreen(&e, gWindow, gRenederer, "data\\Backgrounds\\main.png", x.w, x.h, (Hero*)hero, &ListofObjects);
-        pauseScreen = new PauseScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\menu.png", x.w, x.h);
-        missions = new Missions(&e, gWindow, gRenederer, "data\\Backgrounds\\main.png", x.w, x.h);
+        splashScreen = new SplashScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\Main_splash.png", x.w, x.h);
+        win = new WinScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\win_screen.png", x.w, x.h);
+        lose = new WinScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\game_over.png", x.w, x.h);
+        menu = new Menu(&e, gWindow, gRenederer, "data\\Backgrounds\\menu.jpeg", x.w, x.h);
+        gs = new GameScreen(&e, gWindow, gRenederer, "data\\Backgrounds\\main_background.png", x.w, x.h, (Hero*)hero, &ListofObjects);
+        pauseScreen = new PauseScreen(&e, gWindow, gRenederer, "data\\Backgrounds\\menu.jpeg", x.w, x.h);
+        missions = new Missions(&e, gWindow, gRenederer, "data\\SplashScreen\\missions.png", x.w, x.h);
         themeMusic = new Music("theme.mp3");
 
         splashScreen->setEnabled(true);
@@ -207,10 +207,74 @@ void Game::GameLogic()
             OnScreenEnemies += 2;
         }
     }
-    else if (Current_Stage == 1000)
-    {
+    else if (Current_Stage == 1000) { // End of Stage 1
         free = false;
         roundScreenShown = false;
+
+        // Check if the player has killed 14 enemies and reached a certain spot
+        if (EnemyKillCount >= 14) {
+            // Transition to Stage 2
+            Current_Stage = 2000; // Set the stage to Stage 2
+            EnemyKillCount = 0;   // Reset kill count for the next stage
+            OnScreenEnemies = 0;  // Reset enemy count
+        
+            // Array of image paths
+            const char* imagePaths[] = {
+                "data/New/one.png",
+                "data/New/two.png",
+                "data/New/three.png",
+                "data/New/four.png"
+            };
+            int totalImages = 4; // Total number of images
+            int currentImageIndex = 0; // Index of the current image
+        
+            // Load the first transition image
+            SDL_Texture* transitionImage = IMG_LoadTexture(gRenederer, imagePaths[currentImageIndex]);
+            if (transitionImage == nullptr) {
+                printf("Failed to load transition image! SDL_Error: %s\n", SDL_GetError());
+                return;
+            }
+        
+            // Show the transition images one by one
+            bool transitionDone = false;
+            while (!transitionDone) {
+                // Handle events
+                SDL_Event event;
+                while (SDL_PollEvent(&event)) {
+                    if (event.type == SDL_QUIT) {
+                        Quit = true;
+                        transitionDone = true;
+                    } else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_RETURN) {
+                        // Move to the next image
+                        currentImageIndex++;
+                        if (currentImageIndex >= totalImages) {
+                            // All images have been shown, exit the transition
+                            transitionDone = true;
+                        } else {
+                            // Load the next image
+                            SDL_DestroyTexture(transitionImage); // Clean up the previous texture
+                            transitionImage = IMG_LoadTexture(gRenederer, imagePaths[currentImageIndex]);
+                            if (transitionImage == nullptr) {
+                                printf("Failed to load transition image! SDL_Error: %s\n", SDL_GetError());
+                                return;
+                            }
+                        }
+                    }
+                }
+        
+                // Render the current transition image
+                SDL_SetRenderDrawColor(gRenederer, 0, 0, 0, 255);
+                SDL_RenderClear(gRenederer);
+                SDL_RenderCopy(gRenederer, transitionImage, NULL, NULL);
+                SDL_RenderPresent(gRenederer);
+            }
+        
+            // Clean up the last transition image
+            SDL_DestroyTexture(transitionImage);
+        
+            // Revert to the original background and continue to Stage 2
+            gs->setEnabled(true); // Enable the game screen
+        }
     }
     else if (!TankGenerated && Current_Stage == 2000)
     {
