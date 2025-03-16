@@ -15,7 +15,7 @@ bool LoadAndSave::Save(List<GameObjects*>* list, const char* path) {
         return false;
     }
 
-    SaveGameToFile(file, game);
+    SaveGameToFile(file, game); // Uses Game.h friend function
 
     Node<GameObjects*>* tempNode = list->getStart();
     while (tempNode) {
@@ -52,7 +52,7 @@ bool LoadAndSave::Load(List<GameObjects*>* list, const char* path) {
         line[strcspn(line, "\n")] = 0;
 
         if (strcmp(line, "---GAME---") == 0) {
-            LoadGameFromFile(file, game);
+            LoadGameFromFile(file, game); // Uses Game.h friend function
         } else if (strcmp(line, "---HERO---") == 0) {
             Hero* hero = (Hero*)list->getStart()->value; 
             LoadHeroFromFile(file, hero);
@@ -84,7 +84,5 @@ bool LoadAndSave::Load(List<GameObjects*>* list, const char* path) {
 }
 
 LoadAndSave::~LoadAndSave() {
-    // Destructor
-    // Free memory
-    // Close files if open
+    // No dynamic memory to free here currently
 }

@@ -53,7 +53,8 @@ void GameScreen::Render()
         if (coordX + 1000 >= game->Current_Stage + 1000)
         {
             game->free = true;
-            game->Current_Stage += 1000;
+            // Replace direct assignment with SetCurrentStage
+            // game->free = true is enough to signal GameLogic to proceed
         }
     }
     else

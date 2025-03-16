@@ -3,21 +3,21 @@
 
 #include "Sprites.h"
 #include "GameObjects.h"
-#include <cstdio> 
+#include <cstdio>
 
-class Bullet : public GameObjects
-{
+class Bullet : public GameObjects {
 public:
-    Bullet(SDL_Window* gWindow, SDL_Renderer* grenderer, int posX, int posY, float moveX, float moveY, const char* description);
-    const char* getType(); // Returns type of bullet
-    bool IsAlive(); // Returns if the bullet is alive or not
-    void render(int frames = 0);
-    Point get_Position();
-    Point get_Size();
+    Bullet(SDL_Window* gWindow, SDL_Renderer* grenderer, int posX, int posY, float moveX, float moveY, const char* description, const char* spritePath = "data/bullets/bullet.png");
+    const char* getType() override;
+    bool IsAlive() override;
+    void render(int frames = 0) override;
+    Point get_Position() override;
+    Point get_Size() override;
     void setAlive(bool alive);
-    bool Inframe(); // Returns whether the bullet is in frame or not
+    bool Inframe();
     void Move(int x = 0, int y = 0);
-    void CollisionImpact(GameObjects* CollidedWith);
+    void CollisionImpact(GameObjects* CollidedWith) override;
+    void setTarget(Point target); // Added for homing
     virtual ~Bullet();
 
     Bullet() = delete;
@@ -30,6 +30,8 @@ private:
     bool inFrame;
     float x;
     float y;
+    bool homing;       // Added for homing behavior
+    Point target;      // Target position for homing
 };
 
 #endif // BULLET_H

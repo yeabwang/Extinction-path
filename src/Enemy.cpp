@@ -1,17 +1,16 @@
 #include "Enemy.h"
 
-Enemy::Enemy(SDL_Window* gWindow, SDL_Renderer* grenderer, int posX, List<GameObjects*>* bullets, int delay)
-{
+Enemy::Enemy(SDL_Window* gWindow, SDL_Renderer* grenderer, int posX, List<GameObjects*>* bullets, int delay, Hero* heroPtr) {
     this->delay = delay;
     this->bullets = bullets;
     this->gWindow = gWindow;
     this->grenderer = grenderer;
-    dRect = new SDL_Rect{ posX, 550, 150, 100 };
+    dRect = new SDL_Rect{posX, 550, 150, 100};
     sound[0] = new SoundEffects("data\\Enemy\\fire.wav");
     sound[1] = new SoundEffects("data\\Enemy\\dead.wav");
     EnemyStates[0] = new Sprites(gWindow, grenderer, "data\\Enemy\\Images\\firing1.png", 9, 396 / 9, 40, dRect, "Enemy", true);
     EnemyStates[1] = new Sprites(gWindow, grenderer, "data\\Enemy\\Images\\Running1.png", 12, 396 / 12, 42, dRect, "Enemy", true);
-    hero = (Hero*)((bullets->getStart())->value);
+    hero = heroPtr ? heroPtr : (bullets->getStart() ? (Hero*)bullets->getStart()->value : nullptr); // Safer hero assignment
 }
 
 Point Enemy::get_Position()
@@ -29,51 +28,38 @@ void Enemy::setAlive(bool alive)
     this->alive = alive;
 }
 
-void Enemy::render(int frame)
-{
-    if (alive)
-    {
-        if (!fire(frame))
-        {
-            int Hx = (hero->get_Position()).get_X();
-            int Ex = get_Position().get_X();
-            if (Ex - Hx > 0)
-            {
-                flip = SDL_FLIP_NONE;
-                Move(-3);
-            }
-            else
-            {
-                flip = SDL_FLIP_HORIZONTAL;
-                Move(3);
+void Enemy::render(int frame) {
+    if (alive) {
+        if (!fire(frame)) {
+            if (hero) { // Check hero pointer
+                int Hx = hero->get_Position().get_X();
+                int Ex = get_Position().get_X();
+                if (Ex - Hx > 0) {
+                    flip = SDL_FLIP_NONE;
+                    Move(-3);
+                } else {
+                    flip = SDL_FLIP_HORIZONTAL;
+                    Move(3);
+                }
             }
         }
-        if (count)
-        {
+        if (count) {
             cs = 0;
             count--;
-        }
-        else
-        {
+        } else {
             cs = 1;
         }
         EnemyStates[cs]->render(frame, flip);
-    }
-    else
-    {
+    } else if (!alive && count == -1) { // Play death sound only once
         sound[1]->Play();
+        count = -2; // Mark as played
     }
 }
 
-Enemy::~Enemy()
-{
-    for (int i = 0; i < 2; i++)
-    {
+Enemy::~Enemy() {
+    for (int i = 0; i < 2; i++) {
         delete EnemyStates[i];
-    }
-    for (int i = 0; i < 1; i++)
-    {
-        delete sound[i];
+        delete sound[i]; // Fix: Delete both sounds
     }
     delete dRect;
 }

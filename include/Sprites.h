@@ -4,38 +4,45 @@
 #include "SDL.h"
 #include "SDL_image.h"
 #include "Point.h"
-#include <cstdio> // For C-style I/O
+#include <cstdio>
 
-class Sprites
-{
+class Sprites {
 public:
-    Sprites(SDL_Window* gWindow, SDL_Renderer* gRenderer, const char* Path, int NoS, int posX, int posY, int sWidth, int sHeight, int width, int height, const char* description, bool colorKey = false, int df = 0);
-    Sprites(SDL_Window* gWindow, SDL_Renderer* gRenderer, const char* Path, int NoS, int sWidth, int sHeight, SDL_Rect* externalDestination, const char* description, bool colorKey = false, int df = 0);
+    // Constructor for initializing with explicit position and size
+    Sprites(SDL_Window* gWindow, SDL_Renderer* gRenderer, const char* Path, int NoS, int posX, int posY, 
+            int sWidth, int sHeight, int width, int height, const char* description, bool colorKey = false, int df = 0);
+    // Constructor for linking to an external destination rectangle
+    Sprites(SDL_Window* gWindow, SDL_Renderer* gRenderer, const char* Path, int NoS, int sWidth, int sHeight, 
+            SDL_Rect* externalDestination, const char* description, bool colorKey = false, int df = 0);
 
-    void moveDestinationArea(int x = 0, int y = 0); // Moves Destination rectangle (Moves Image on screen)
-    void moveSpriteArea(int x = 0); // Moves current sprite
-    void render(int Frame = 0, SDL_RendererFlip flip = SDL_FLIP_NONE); // Renders animated sprite
-    Point get_Position(); // Returns current position of sprite
-    Point get_Size(); // Returns size of sprite
-    int get_NOS(); // Returns number of clips
-    void set_CS(int n); // Sets current selected clip
+    bool isValid() const { return Texture != nullptr; } // Check if texture is loaded
+    void moveDestinationArea(int x = 0, int y = 0);     // Move the destination rectangle
+    void moveSpriteArea(int x = 0);                      // Move the source rectangle (for animation)
+    void render(int Frame = 0, SDL_RendererFlip flip = SDL_FLIP_NONE, double overrideAngle = 0.0); // Render with optional angle override
+    void setAngle(double a);                             // Set persistent angle
+    double getAngle() const { return angle; }            // Get persistent angle (added)
+    Point get_Position();                                // Get sprite position
+    Point get_Size();                                    // Get sprite size
+    int get_NOS();                                       // Get number of sprites
+    void set_CS(int n);                                  // Set current sprite index
     virtual ~Sprites();
 
-    // Disable copy constructor and assignment operator
-    Sprites(const Sprites&) = delete;
+    Sprites(const Sprites&) = delete;                    // Disable copying
     Sprites& operator=(const Sprites&) = delete;
 
+    SDL_Rect* dRect;                                     // Public destination rectangle (moved from protected)
+
 protected:
-    int cs = 0; // Index of currentSprite
-    int NOS; // Number of Sprites in this texture
-    SDL_Texture* Texture; // Texture of Image
-    Point Size; // Size of the sprite
-    Point position; // Position of sprite renderer
-    SDL_Window* gWindow; // Main Window
-    SDL_Renderer* gRenderer; // Main Renderer
-    SDL_Rect** sRect; // Source Rectangle
-    SDL_Rect* dRect; // Destination Rectangle
-    const char* ClassDescription; // Description or name
+    double angle = 0.0;                                  // Persistent angle for rotation
+    int cs = 0;                                          // Current sprite index
+    int NOS;                                             // Number of sprites
+    SDL_Texture* Texture;                                // Texture for rendering
+    Point Size;                                          // Sprite dimensions
+    Point position;                                      // Sprite position
+    SDL_Window* gWindow;                                 // Window reference
+    SDL_Renderer* gRenderer;                             // Renderer reference
+    SDL_Rect** sRect;                                    // Array of source rectangles for animation
+    const char* ClassDescription;                        // Descriptive string
 };
 
 #endif // SPRITES_H

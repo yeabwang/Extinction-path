@@ -1,73 +1,128 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "SDL.h"
-#include "SDL_image.h"
-#include "Point.h"
-#include "List.h"
-#include "Bullet.h"
-#include "Hero.h"
-#include "Menu.h"
+#include <SDL.h>
 #include "SplashScreen.h"
-#include "PauseScreen.h"
-#include "Music.h"
 #include "WinScreen.h"
+#include "Menu.h"
+#include "GameScreen.h"
+#include "PauseScreen.h"
+#include "List.h"
+#include "GameObjects.h"
+#include "Hero.h"
+#include "Enemy.h"
+#include "Tank.h"
+#include "Helicopter.h"
+#include "Boss.h"
+#include "Dragon.h"      
+#include "terrain.h"
+#include "Obstacles.h"
+#include "Music.h"
+#include "Missions.h"
 
-// Forward declarations
-class LoadandSave;
-class GameObjects;
-class Screen;
-class Missions;
+// Forward declaration
+class LoadAndSave;
 
-class Game
-{
-public:
-    SDL_Rect screen;
-    Game(int width, int height, LoadandSave* file); // Constructor
-    void LoadGame(); // Loads game
-    void SaveGame(); // Saves game
-    void GameLogic();
-    void ObjectsManager(); // Manages objects in the list
-    bool EventController(); // Handles events
-    virtual ~Game(); // Destructor
-
-    int Current_Stage;
-    bool free;
-
-protected:
-    SplashScreen* splashScreen;
-    Menu* menu;
-    PauseScreen* pauseScreen;
-    WinScreen* win;
-    WinScreen* lose;
-    Missions* missions;
-    int counter;
-    GameScreen* gs;
-    List<GameObjects*> ListofObjects;
-    List<Bullet*> EnemyBullets;
+class Game {
+private:
     SDL_Window* gWindow;
     SDL_Renderer* gRenederer;
-    Point WindowSize;
     SDL_Event e;
-    bool Quit;
+
+    SplashScreen* splashScreen;
+    WinScreen* win;
+    WinScreen* lose;
+    Menu* menu;
+    GameScreen* gs;
+    PauseScreen* pauseScreen;
+    Missions* missions;
     Music* themeMusic;
-    LoadandSave* File;
+
+    Hero* hero;
+    terrain* ter;
+
+    List<GameObjects*> ListofObjects;
+
+    LoadAndSave* File;
+
+    SDL_Rect screen;
+
+    int counter;
+    int spawnCounter; // Moved from GameLogic to class scope
+    bool Quit;
+    bool free;
+    bool roundScreenShown;
+
+    int Current_Stage;
     int EnemyKillCount;
     int OnScreenEnemies;
+
     bool TankKilled;
     bool TankGenerated;
     bool HelicopterKilled;
     bool HelicopterGenerated;
     bool FinalEnemiesGenerated;
     bool BossGenerated;
-    bool roundScreenShown; // Flag to track if the round screen has been shown
-    GameObjects* hero;
+    bool DragonGenerated;
+    bool DragonKilled;
 
-    friend void SaveGameToFile(FILE* file, Game* game);
-    friend void LoadGameFromFile(FILE* file, Game* game);
+    struct WindowSize {
+        int w;
+        int h;
+        WindowSize(int width, int height) : w(width), h(height) {}
+    } WindowSize;
 
-private:
-    bool Initialize_components(); 
+    bool Initialize_components();
+    void GameLogic();
+    void ObjectsManager();
+    bool EventController();
+    void SaveGame();
+    void LoadGame();
+
+public:
+    Game(int width, int height, LoadAndSave* file);
+    ~Game();
+    void SetCurrentStage(int stage);
+
+    friend class Hero;
+    friend class GameScreen;
+    friend class LoadAndSave;
+
+    // Friend functions
+    friend void SaveGameToFile(FILE* file, Game* game) {
+        fprintf(file, "---GAME---\n");
+        fprintf(file, "%d\n", game->Current_Stage);
+        fprintf(file, "%d\n", game->EnemyKillCount);
+        fprintf(file, "%d\n", game->OnScreenEnemies);
+        fprintf(file, "%d\n", game->free ? 1 : 0);
+        fprintf(file, "%d\n", game->roundScreenShown ? 1 : 0);
+        fprintf(file, "%d\n", game->TankKilled ? 1 : 0);
+        fprintf(file, "%d\n", game->TankGenerated ? 1 : 0);
+        fprintf(file, "%d\n", game->HelicopterKilled ? 1 : 0);
+        fprintf(file, "%d\n", game->HelicopterGenerated ? 1 : 0);
+        fprintf(file, "%d\n", game->FinalEnemiesGenerated ? 1 : 0);
+        fprintf(file, "%d\n", game->BossGenerated ? 1 : 0);
+        fprintf(file, "%d\n", game->DragonGenerated ? 1 : 0);
+        fprintf(file, "%d\n", game->DragonKilled ? 1 : 0);
+    }
+
+    friend void LoadGameFromFile(FILE* file, Game* game) {
+        int temp;
+        fscanf(file, "%*s"); // Skip "---GAME---"
+        fscanf(file, "%d", &game->Current_Stage);
+        fscanf(file, "%d", &game->EnemyKillCount);
+        fscanf(file, "%d", &game->OnScreenEnemies);
+        fscanf(file, "%d", &temp); game->free = (temp != 0);
+        fscanf(file, "%d", &temp); game->roundScreenShown = (temp != 0);
+        fscanf(file, "%d", &temp); game->TankKilled = (temp != 0);
+        fscanf(file, "%d", &temp); game->TankGenerated = (temp != 0);
+        fscanf(file, "%d", &temp); game->HelicopterKilled = (temp != 0);
+        fscanf(file, "%d", &temp); game->HelicopterGenerated = (temp != 0);
+        fscanf(file, "%d", &temp); game->FinalEnemiesGenerated = (temp != 0);
+        fscanf(file, "%d", &temp); game->BossGenerated = (temp != 0);
+        fscanf(file, "%d", &temp); game->DragonGenerated = (temp != 0);
+        fscanf(file, "%d", &temp); game->DragonKilled = (temp != 0);
+    }
 };
 
-#endif // GAME_H
+#endif

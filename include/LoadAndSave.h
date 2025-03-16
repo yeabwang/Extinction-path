@@ -26,8 +26,7 @@ protected:
     SDL_Window* gWindow;
     SDL_Renderer* gRenderer;
 
-    friend void SaveGameToFile(FILE* file, Game* game);
-    friend void LoadGameFromFile(FILE* file, Game* game);
+    // Removed friend function declarations
     friend void SaveHeroToFile(FILE* file, Hero* hero);
     friend void LoadHeroFromFile(FILE* file, Hero* hero);
     friend void SaveEnemyToFile(FILE* file, Enemy* enemy); 
@@ -42,4 +41,4 @@ protected:
     friend void LoadObstaclesFromFile(FILE* file, Obstacles* obs);
 };
 
-#endif // LOADANDSAVE_H
+#endif

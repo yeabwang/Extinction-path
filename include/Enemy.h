@@ -11,7 +11,7 @@
 class Enemy : public Character
 {
 public:
-    Enemy(SDL_Window* gWindow, SDL_Renderer* grenderer, int posX, List<GameObjects*>* bullets, int delay);
+Enemy(SDL_Window* gWindow, SDL_Renderer* grenderer, int posX, List<GameObjects*>* bullets, int delay, Hero* heroPtr = nullptr);
     void EventsController(SDL_Event* e) {} // No implementation
     Point get_Position();
     void Move(int x = 0, int y = 0);

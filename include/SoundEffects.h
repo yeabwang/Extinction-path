@@ -10,9 +10,10 @@ public:
     SoundEffects(const char* path); 
     SoundEffects(const SoundEffects&) = delete; 
     SoundEffects& operator=(const SoundEffects&) = delete; 
-    void Play(int loop = 0);
-    void Pause();
-    void Resume();
+    void Play(int loop = 0) override;
+    void Pause() override;
+    void Resume() override;
+    bool isValid() const { return chunk != nullptr; } // Added validity check
     virtual ~SoundEffects();
 
 private:
