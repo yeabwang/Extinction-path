@@ -41,6 +41,19 @@ Hero::Hero(SDL_Window* gWindow, SDL_Renderer* grenderer, List<GameObjects*>* lst
     printf("Position: (%d, %d), Size: (%d, %d)\n", get_Position().get_X(), get_Position().get_Y(), get_Size().get_X(), get_Size().get_Y());
 }
 
+Hero::~Hero()
+{
+    delete dRect;
+    for (int i = 0; i < 5; ++i)
+    {
+        delete HeroStates[i];
+    }
+    for (int i = 0; i < 2; ++i)
+    {
+        delete sound[i];
+    }
+}
+
 bool Hero::IsMoved()
 {
     return moved;
@@ -461,4 +474,16 @@ void LoadHeroFromFile(FILE* file, Hero* hero)
     fscanf(file, "%d", &hero->count);
     fscanf(file, "%d", &temp); hero->shootUp = (temp != 0);
     fscanf(file, "%d", &temp); hero->fire = (temp != 0);
-    fscanf(file, "%d", &temp); hero->jump = (temp
+    fscanf(file, "%d", &temp); hero->jump = (temp != 0);
+    fscanf(file, "%d", &temp); hero->jumping = (temp != 0);
+    fscanf(file, "%d", &hero->movey);
+    fscanf(file, "%d", &hero->movex);
+    fscanf(file, "%d", &temp); hero->onground = (temp != 0);
+    fscanf(file, "%d", &hero->ground);
+    fscanf(file, "%d", &hero->cs);
+    fscanf(file, "%d", &hero->dRect->x);
+    fscanf(file, "%d", &hero->dRect->y);
+    int health;
+    fscanf(file, "%d", &health);
+    hero->health.set_Health(health);
+}
