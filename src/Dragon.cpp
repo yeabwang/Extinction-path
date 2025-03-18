@@ -277,20 +277,6 @@ Dragon::Dragon(SDL_Window* gWindow, SDL_Renderer* gRenderer, int posX, int posY,
     }
 }
 
-Dragon::~Dragon() {
-    delete headSprite;
-    delete headRect;
-    for (auto segment : tailSegments) delete segment;
-    delete laserSprite;
-    delete laserRect;
-    delete laserFlare;
-    delete laserFlareRect;
-    for (auto missile : missiles) delete missile;
-    delete navigator;
-    delete blastSound;
-    delete laserSound;
-}
-
 const char* Dragon::getType() {
     return "DRAGON";
 }
@@ -551,4 +537,19 @@ void Dragon::updateTail(int frame) {
     float baseAngle = BOSS_DEFAULT_TAIL_ROTATION + tailWiggleAmplitude * BOSS_TAILWIGGLE_AMPLITUDE * sin(tailWiggleTimer * BOSS_TAILWIGGLE_SPEED * tailWiggleSpeed);
     tailSegments[0]->angle = baseAngle;
     tailSegments[0]->update(*headRect);
+}
+
+
+Dragon::~Dragon() {
+    delete headSprite;
+    delete headRect;
+    for (auto segment : tailSegments) delete segment;
+    delete laserSprite;
+    delete laserRect;
+    delete laserFlare;
+    delete laserFlareRect;
+    for (auto missile : missiles) delete missile;
+    delete navigator;
+    delete blastSound;
+    delete laserSound;
 }
