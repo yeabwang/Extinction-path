@@ -63,6 +63,7 @@ Game::Game(int width, int height, LoadAndSave* file) : WindowSize(width, height)
         splashScreen->setEnabled(true);
         themeMusic->Play();
 
+        // Game Loop
         while (!Quit) {
             while (SDL_PollEvent(&e)) {
                 EventController();
