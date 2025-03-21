@@ -25,6 +25,7 @@ Hero::Hero(SDL_Window* gWindow, SDL_Renderer* grenderer, List<GameObjects*>* lst
     Alive = true;
     collided = false;
     count = 0;
+    meleeCooldown = 0;
     shootUp = false;
     fire = false;
     jump = false;
@@ -42,14 +43,23 @@ bool Hero::IsMoved()
     return moved;
 }
 
-void Hero::setAlive(bool alive)
-{
-    this->Alive = alive;
-    health.set_Health(100);
-    dRect->x = 1;
-    dRect->y = 550;
-    dRect->w = 200;
-    dRect->h = 100;
+void Hero::setAlive(bool alive) {
+    if (alive) {
+        this->Alive = true;
+        health.set_Health(100);
+        dRect->x = 1;
+        dRect->y = 550;
+        dRect->w = 200;
+        dRect->h = 100;
+    } else {
+        // Only allow death if health is 0
+        if (health.get_Health() <= 0) {
+            this->Alive = false;
+            printf("Hero set to dead via setAlive, Health: %d\n", health.get_Health());
+        } else {
+            printf("Attempt to kill hero via setAlive blocked, Health: %d\n", health.get_Health());
+        }
+    }
 }
 
 bool Hero::IsAlive()
@@ -57,12 +67,21 @@ bool Hero::IsAlive()
     return Alive;
 }
 
-void Hero::render(int frames)
+void Hero::render(int frames) 
 {
-    if (health.get_Health() == 0)
+    if (meleeCooldown > 0) 
     {
-        Alive = false;
+        meleeCooldown--;  // Decrease cooldown only in render()
     }
+
+    if (health.get_Health() <= 0) 
+    {
+        health.set_Health(0);
+        Alive = false;
+        printf("Player died. Health: %d\n", health.get_Health());
+    }
+
+
 
     if (jump && jumping && movey < 0)
     {
@@ -242,6 +261,7 @@ void Hero::DecreaseHealth()
     health.decrease(1);
 }
 
+
 void Hero::CollisionImpact(GameObjects* CollidedWith)
 {
     SDL_Rect collide = { (CollidedWith->get_Position()).get_X(), (CollidedWith->get_Position()).get_Y(), (CollidedWith->get_Size()).get_X(), (CollidedWith->get_Size()).get_Y() };
@@ -254,39 +274,50 @@ void Hero::CollisionImpact(GameObjects* CollidedWith)
         if (SDL_HasIntersection(&collide, dRect))
         {
             CollidedWith->setAlive(false);
-            health.decrease(1);
+            health.decrease(1);  // Decrease health by 1
             sound[1]->Play();
-            if (health.get_Health() == 0)
-            {
-                Alive = false;
-            }
-        }
-    }
-    else if (strcmp(CollidedWith->getType(), "BOSS") == 0)
-    {
-        SDL_Rect BossRect = { (CollidedWith->get_Position()).get_X(), (CollidedWith->get_Position()).get_Y(), (CollidedWith->get_Size()).get_X(), (CollidedWith->get_Size()).get_Y() - 100 };
-        if (SDL_HasIntersection(&BossRect, dRect))
-        {
-            health.decrease(3);
-            sound[1]->Play();
-            jump = true; movey = 3; jumping = true; onground = false; movex = 0;
 
+            // Debug log
+            printf("Player hit by ENEMYBULLET. Health: %d\n", health.get_Health());
+
+            // Check if health is zero after decreasing
             if (health.get_Health() <= 0)
             {
-                Alive = false;
+                Alive = false;  // Set Alive to false only if health is zero or below
+                printf("Player died. Health: %d\n", health.get_Health());
             }
         }
     }
+
+    
+
+    else if (strcmp(CollidedWith->getType(), "ENEMY") == 0) 
+    {
+        if (SDL_HasIntersection(&collide, dRect)) // Only trigger if actually touching
+        {
+            if (meleeCooldown == 0) 
+            {
+                health.decrease(5);
+                sound[1]->Play();
+                meleeCooldown = 30; // Cooldown for 30 frames to prevent instant multi-hit
+                printf("Player hit by melee attack. Health: %d\n", health.get_Health());
+            }
+        }
+    }
+    
+
     else if (strcmp(CollidedWith->getType(), "BOMB") == 0)
     {
         if (SDL_HasIntersection(&collide, dRect))
         {
             CollidedWith->CollisionImpact(this);
-            health.decrease(20);
+            health.decrease(20);  // Decrease health by 20
             sound[1]->Play();
-            if (health.get_Health() == 0)
+
+            // Check if health is zero after decreasing
+            if (health.get_Health() <= 0)
             {
-                Alive = false;
+                Alive = false;  // Set Alive to false only if health is zero or below
             }
             CollidedWith->setAlive(false);
         }
@@ -295,7 +326,7 @@ void Hero::CollisionImpact(GameObjects* CollidedWith)
     {
         if (SDL_HasIntersection(&collide, dRect))
         {
-            health.decrease(3);
+            health.decrease(3);  // Decrease health by 3
             sound[1]->Play();
 
             if (dRect->x > collide.x)
@@ -307,9 +338,10 @@ void Hero::CollisionImpact(GameObjects* CollidedWith)
                 jump = true; movey = -30; jumping = true; onground = false; movex = -30;
             }
 
-            if (health.get_Health() == 0)
+            // Check if health is zero after decreasing
+            if (health.get_Health() <= 0)
             {
-                Alive = false;
+                Alive = false;  // Set Alive to false only if health is zero or below
             }
         }
     }

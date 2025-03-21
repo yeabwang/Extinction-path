@@ -25,6 +25,8 @@ public:
     Point getSize();
     void move(int x);
     bool IsMoved();
+    SDL_Texture* getBackgroundTexture(); // Add this method
+    void setBackgroundTexture(SDL_Texture* texture); // Add this method
     virtual ~GameScreen();
 
 protected:
@@ -39,6 +41,7 @@ protected:
     Point Size;
     List<GameObjects*>* mainList;
     SDL_Event* e;
+    SDL_Texture* backgroundTexture; // Add this member
 };
 
 #endif // GAMESCREEN_H

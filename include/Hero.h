@@ -63,6 +63,9 @@ public:
 
     friend void SaveHeroToFile(FILE* file, Hero* hero);
     friend void LoadHeroFromFile(FILE* file, Hero* hero);
+
+    private:
+    int meleeCooldown;
 };
 
 #endif // HERO_H

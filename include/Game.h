@@ -12,6 +12,8 @@
 #include "PauseScreen.h"
 #include "Music.h"
 #include "WinScreen.h"
+#include <SDL_ttf.h> // Add this include for TTF_Font
+#include <string> 
 
 // Forward declarations
 class LoadandSave;
@@ -68,6 +70,16 @@ protected:
 
 private:
     bool Initialize_components(); 
+    bool dialogueTriggered = false;
+    SDL_Texture* originalBackground = nullptr;
+    SDL_Texture* dialogueBackground = nullptr; // Load this texture as needed
+    bool showingNPCDialogue;
+    int currentDialogueLine;
+    TTF_Font* npcFont;
+    SDL_Texture* npcBackgroundTexture;
+    std::string dialogueSets[3][9]; // 3 sets of 3 lines each
+    int dialogueLengths[3];         // Length of each dialogue set
+    int currentDialogueSet;         // Which dialogue set to display
 };
 
 #endif // GAME_H
