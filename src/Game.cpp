@@ -1,9 +1,8 @@
 #include "Game.h"
 #include <cstdlib>
 #include <ctime>
-#include <cstdio> 
-#include <cstring> 
-
+#include <cstdio>
+#include <cstring>
 #include "GameScreen.h"
 #include "Sprites.h"
 #include "Button.h"
@@ -23,6 +22,7 @@
 #include "Boss.h"
 #include "PauseScreen.h"
 #include "Missions.h"
+#include <SDL_ttf.h> // Add SDL_ttf include
 
 bool jump = false;
 int j_loop = 0;
@@ -30,14 +30,13 @@ int movex = 0;
 int movey = 0;
 bool jumping = false;
 
-Game::Game(int width, int height, LoadandSave* file) : WindowSize(width, height)
-{
+Game::Game(int width, int height, LoadandSave* file) : WindowSize(width, height) {
     counter = 0;
     Quit = false;
     File = file;
     roundScreenShown = false;
     free = false;
-    Current_Stage = 1000; 
+    Current_Stage = 1000;
     EnemyKillCount = 0;
     OnScreenEnemies = 0;
     TankKilled = false;
@@ -46,61 +45,142 @@ Game::Game(int width, int height, LoadandSave* file) : WindowSize(width, height)
     HelicopterGenerated = false;
     FinalEnemiesGenerated = false;
     BossGenerated = false;
+    showingNPCDialogue = false; // New variable for NPC dialogue state
+    currentDialogueLine = 0;    // New variable for current dialogue line
+    currentDialogueSet = 0;
 
-    if (Initialize_components()) 
-    {
+    if (Initialize_components()) {
         SDL_Rect x;
-        screen = x; // Note: This copies an uninitialized SDL_Rect; we'll fix this
+        screen = x;
         x.w = 1440;
         x.h = 900;
-        screen.w = x.w; // set dimensions
+        screen.w = x.w;
         screen.h = x.h;
-        screen.x = 0;   // Initialize position
+        screen.x = 0;
         screen.y = 0;
-
-        gWindow = SDL_CreateWindow("Extinction path", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, x.w, x.h, SDL_WINDOW_SHOWN);
-        if (gWindow == NULL) {
+        gWindow = SDL_CreateWindow("Extinction path", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1440, 900, SDL_WINDOW_SHOWN);
+            if (gWindow == NULL) {
             printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
             return;
         }
-
         gRenederer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_PRESENTVSYNC);
-        if (gRenederer == NULL) {
+            if (gRenederer == NULL) {
             printf("Renderer could not be created! SDL_Error: %s\n", SDL_GetError());
             return;
         }
-    
+
+        for (int i = 0; i < 12; i++) {
+            cutsceneTextures[i] = nullptr; // Initialize all texture pointers to null
+        }
+        inCutscene = false;
+        currentCutscene = -1;
+        cutsceneInitialized = false;
+        
+        // Initialize SDL_ttf
+        if (TTF_Init() == -1) {
+            printf("TTF_Init failed: %s\n", TTF_GetError());
+            return;
+        }
+        npcFont = TTF_OpenFont("data/Contra.ttf", 20); // Replace with your font path
+        if (!npcFont) {
+            printf("Font loading failed: %s\n", TTF_GetError());
+        }
+        npcBackgroundTexture = IMG_LoadTexture(gRenederer, "data/New/npc.png");
+        if (!npcBackgroundTexture) {
+            printf("Failed to load NPC background texture! SDL_Error: %s\n", SDL_GetError());
+        }
+
+        // Define dialogue sets (array of arrays)
+        // Stage 1 -> Stage 2 (set 0)
+        dialogueSets[0][0] = "Congratulations on defeating your first boss rookie,\njust like the simulations eh?";
+        dialogueSets[0][1] = "From the intel we gathered while you were\nbusting your butt off with the boss,";
+        dialogueSets[0][2] = "we managed to tap into their communications\nand find out where their base is.";
+        dialogueSets[0][3] = "Get moving soldier!";
+        dialogueLengths[0] = 4;
+
+        // Stage 2 -> Stage 3 (set 1, already implemented)
+        dialogueSets[1][0] = "We have stumbled upon their base,\nbut they have heavy defenses.";
+        dialogueSets[1][1] = "We will try to disable them.\nUntil then, try to infiltrate.";
+        dialogueSets[1][2] = "Bloody hell, of course they have jets and choppers.";
+        dialogueSets[1][3] = "This should be nothing new for you, soldier.\n t is just like back on Felkucia.";
+        dialogueSets[1][4] = "This is possibly even worse than back on Felkucia.\nDamn maggots are swarming all over,\nnot to mention the numerous AA guns.";
+        dialogueSets[1][5] = "Those guns must be why your ship got shot down.\nFor now, clear out the base.\nWe’ll find where to disable the guns.";
+        dialogueLengths[1] = 5;
+
+        // Stage 3 -> Stage 4 (set 2)
+        dialogueSets[2][0] = "Soldier, the enemy superweapon controls\nshould be right over in that bunker.";
+        dialogueSets[2][1] = "We can only extract you once all the defenses\nand the superweapon are destroyed.";
+        dialogueLengths[2] = 2;
 
         hero = new Hero(gWindow, gRenederer, &ListofObjects, this);
         ListofObjects.add(hero);
-
-        splashScreen = new SplashScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\Main_splash.png", x.w, x.h);
+        splashScreen = new SplashScreen(&e, gWindow, gRenederer, "data\\New\\splash1.jpg", x.w, x.h);
         win = new WinScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\win_screen.png", x.w, x.h);
-        lose = new WinScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\game_over.png", x.w, x.h);
-        menu = new Menu(&e, gWindow, gRenederer, "data\\Backgrounds\\menu.jpeg", x.w, x.h);
+        lose = new WinScreen(&e, gWindow, gRenederer, "data\\New\\defeat1.jpg", x.w, x.h);
+        menu = new Menu(&e, gWindow, gRenederer, "data\\New\\menu.jpg", x.w, x.h);
         gs = new GameScreen(&e, gWindow, gRenederer, "data\\Backgrounds\\main_background.png", x.w, x.h, (Hero*)hero, &ListofObjects);
-        pauseScreen = new PauseScreen(&e, gWindow, gRenederer, "data\\Backgrounds\\menu.jpeg", x.w, x.h);
+        pauseScreen = new PauseScreen(&e, gWindow, gRenederer, "data\\SplashScreen\\missions.png", x.w, x.h);
         missions = new Missions(&e, gWindow, gRenederer, "data\\SplashScreen\\missions.png", x.w, x.h);
         themeMusic = new Music("theme.mp3");
-
         splashScreen->setEnabled(true);
         themeMusic->Play();
 
-        while (!Quit)
-        {
-            while (SDL_PollEvent(&e))
-            {
+        while (!Quit) {
+            while (SDL_PollEvent(&e)) {
                 EventController();
                 if (e.type == SDL_QUIT)
                     Quit = true;
                 if (ListofObjects.getStart() != NULL && gs->IsEnable())
                     ((Character*)hero)->EventsController(&e);
             }
-
             SDL_SetRenderDrawColor(gRenederer, 255, 255, 255, 255);
             SDL_RenderClear(gRenederer);
+            if (inCutscene) {
+                if (!cutsceneInitialized) {
+                    LoadCurrentCutscene();
+                    cutsceneInitialized = true;
+                }
+                RenderCutscene();
+            }
 
-            if (win->IsEnable())
+            else if (showingNPCDialogue) {
+                // Render NPC dialogue background
+                SDL_RenderCopy(gRenederer, npcBackgroundTexture, NULL, NULL);
+            
+                if (currentDialogueLine < dialogueLengths[currentDialogueSet]) {
+                    SDL_Color white = {255, 255, 255, 255};
+                    std::string dialogueText = dialogueSets[currentDialogueSet][currentDialogueLine];
+            
+                    // Split the text into lines based on '\n'
+                    std::vector<std::string> lines;
+                    size_t pos = 0;
+                    while ((pos = dialogueText.find('\n')) != std::string::npos) {
+                        lines.push_back(dialogueText.substr(0, pos));
+                        dialogueText.erase(0, pos + 1);
+                    }
+                    lines.push_back(dialogueText); // Add the last line
+            
+                    // Render each line
+                    int startY = screen.h - 200; // Starting y-position for the first line
+                    for (const auto& line : lines) {
+                        SDL_Surface* surface = TTF_RenderText_Blended(npcFont, line.c_str(), white);
+                        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(gRenederer, surface);
+            
+                        // Calculate the position for this line
+                        SDL_Rect textRect = {100, startY, 0, 0};
+                        SDL_QueryTexture(textTexture, NULL, NULL, &textRect.w, &textRect.h);
+                        SDL_RenderCopy(gRenederer, textTexture, NULL, &textRect);
+            
+                        // Move the y-position down for the next line
+                        startY += textRect.h + 5; // Add a small gap between lines
+            
+                        // Clean up
+                        SDL_FreeSurface(surface);
+                        SDL_DestroyTexture(textTexture);
+                    }
+                }
+            }
+            else if (win->IsEnable())
                 win->Render();
             else if (lose->IsEnable())
                 lose->Render();
@@ -110,8 +190,7 @@ Game::Game(int width, int height, LoadandSave* file) : WindowSize(width, height)
                 menu->Render();
             else if (missions->IsEnable())
                 missions->Render();
-            else if (gs->IsEnable())
-            {
+            else if (gs->IsEnable()) {
                 gs->Render();
                 GameLogic();
                 ObjectsManager();
@@ -124,17 +203,14 @@ Game::Game(int width, int height, LoadandSave* file) : WindowSize(width, height)
 
             SDL_RenderPresent(gRenederer);
         }
-
         SaveGame();
     }
-    else
-    {
+    else {
         printf("Game Cannot be started!\n");
     }
 }
 
-bool Game::Initialize_components()
-{
+bool Game::Initialize_components() {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         return false;
@@ -182,23 +258,57 @@ void LoadGameFromFile(FILE* file, Game* game)
     fscanf(file, "%d", &tempInt); game->BossGenerated = (tempInt != 0);
     fscanf(file, "%d", &game->Current_Stage);
 }
+// Add these function implementations to your Game.cpp
 
-void Game::GameLogic()
-{
-    if (EnemyKillCount <= 12 && Current_Stage == 1000)
-    {
-        if (OnScreenEnemies < 2)
-        {
-            if (!roundScreenShown) // Only show the round screen if it hasn't been shown yet
-            {
+void Game::StartCutscene() {
+    inCutscene = true;
+    currentCutscene = 0;
+    cutsceneInitialized = false;
+    gs->setEnabled(false);
+}
+
+void Game::LoadCurrentCutscene() {
+    if (currentCutscene >= 0 && currentCutscene < 12) {
+        char path[256];
+        snprintf(path, sizeof(path), "data/New/scene%d.png", currentCutscene + 1);
+        cutsceneTextures[currentCutscene] = IMG_LoadTexture(gRenederer, path);
+        if (!cutsceneTextures[currentCutscene]) {
+            printf("Failed to load cutscene %d: %s\n", currentCutscene + 1, IMG_GetError());
+        }
+    }
+}
+
+void Game::EndCutscene() {
+    // Clean up loaded textures
+    for (int i = 0; i < 12; i++) {
+        if (cutsceneTextures[i]) {
+            SDL_DestroyTexture(cutsceneTextures[i]);
+            cutsceneTextures[i] = nullptr;
+        }
+    }
+    
+    inCutscene = false;
+    currentCutscene = -1;
+    gs->setEnabled(true);
+}
+
+void Game::RenderCutscene() {
+    if (currentCutscene >= 0 && currentCutscene < 12 && cutsceneTextures[currentCutscene]) {
+        SDL_Rect destRect = {0, 0, 1440, 900}; // Ensure the texture is scaled to 1440x900
+        SDL_RenderCopy(gRenederer, cutsceneTextures[currentCutscene], NULL, &destRect);
+    }
+}
+
+void Game::GameLogic() {
+    if (EnemyKillCount <= 12 && Current_Stage == 1000) {
+        if (OnScreenEnemies < 2) {
+            if (!roundScreenShown) {
                 missions->setRoundNumber(1);
                 missions->setEnabled(true);
                 gs->setEnabled(false);
                 roundScreenShown = true;
             }
-
-            if (rand() % 3 == 0)
-            {
+            if (rand() % 3 == 0) {
                 ListofObjects.add(new Obstacles(gWindow, gRenederer, 1, "data\\Obstacles\\armyTruck.png", screen.w * 1.111, screen.h * 0.555, 138, 71, screen.w * 0.173, screen.h * 0.166, this->gs));
                 printf("%f %f\n", screen.w * 1.111, screen.h * 0.555);
             }
@@ -207,113 +317,59 @@ void Game::GameLogic()
             OnScreenEnemies += 2;
         }
     }
-    else if (Current_Stage == 1000) { // End of Stage 1
+    else if (Current_Stage == 1000) {
         free = false;
         roundScreenShown = false;
-
-        // Check if the player has killed 14 enemies and reached a certain spot
         if (EnemyKillCount >= 14) {
-            // Transition to Stage 2
-            Current_Stage = 2000; // Set the stage to Stage 2
-            EnemyKillCount = 0;   // Reset kill count for the next stage
-            OnScreenEnemies = 0;  // Reset enemy count
-        
-            // Array of image paths
-            const char* imagePaths[] = {
-                "data/New/one.png",
-                "data/New/two.png",
-                "data/New/three.png",
-                "data/New/four.png"
-            };
-            int totalImages = 4; // Total number of images
-            int currentImageIndex = 0; // Index of the current image
-        
-            // Load the first transition image
-            SDL_Texture* transitionImage = IMG_LoadTexture(gRenederer, imagePaths[currentImageIndex]);
-            if (transitionImage == nullptr) {
-                printf("Failed to load transition image! SDL_Error: %s\n", SDL_GetError());
-                return;
-            }
-        
-            // Show the transition images one by one
-            bool transitionDone = false;
-            while (!transitionDone) {
-                // Handle events
-                SDL_Event event;
-                while (SDL_PollEvent(&event)) {
-                    if (event.type == SDL_QUIT) {
-                        Quit = true;
-                        transitionDone = true;
-                    } else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_RETURN) {
-                        // Move to the next image
-                        currentImageIndex++;
-                        if (currentImageIndex >= totalImages) {
-                            // All images have been shown, exit the transition
-                            transitionDone = true;
-                        } else {
-                            // Load the next image
-                            SDL_DestroyTexture(transitionImage); // Clean up the previous texture
-                            transitionImage = IMG_LoadTexture(gRenederer, imagePaths[currentImageIndex]);
-                            if (transitionImage == nullptr) {
-                                printf("Failed to load transition image! SDL_Error: %s\n", SDL_GetError());
-                                return;
-                            }
-                        }
-                    }
-                }
-        
-                // Render the current transition image
-                SDL_SetRenderDrawColor(gRenederer, 0, 0, 0, 255);
-                SDL_RenderClear(gRenederer);
-                SDL_RenderCopy(gRenederer, transitionImage, NULL, NULL);
-                SDL_RenderPresent(gRenederer);
-            }
-        
-            // Clean up the last transition image
-            SDL_DestroyTexture(transitionImage);
-        
-            // Revert to the original background and continue to Stage 2
-            gs->setEnabled(true); // Enable the game screen
+            // Transition to Stage 2 with NPC dialogue
+            Current_Stage = 2000;
+            EnemyKillCount = 0;
+            OnScreenEnemies = 0;
+            showingNPCDialogue = true;
+            currentDialogueSet = 0; // Stage 1 -> 2 dialogue
+            currentDialogueLine = 0;
+            gs->setEnabled(false);
         }
     }
-    else if (!TankGenerated && Current_Stage == 2000)
-    {
-        if (!roundScreenShown)
-        {
+    else if (!TankGenerated && Current_Stage == 2000) {
+        if (!roundScreenShown) {
             missions->setRoundNumber(2);
             missions->setEnabled(true);
             gs->setEnabled(false);
             roundScreenShown = true;
         }
-
         ListofObjects.add(new Tank(gWindow, gRenederer, 1250, 500, &ListofObjects));
         TankGenerated = true;
     }
-    else if (TankKilled && Current_Stage == 2000)
-    {
+    else if (TankKilled && Current_Stage == 2000) {
         free = false;
         roundScreenShown = false;
+        Current_Stage = 3000;
+        showingNPCDialogue = true;
+        currentDialogueSet = 1; // Stage 2 -> 3 dialogue
+        currentDialogueLine = 0;
+        gs->setEnabled(false);
     }
-    else if (TankKilled && !HelicopterGenerated && Current_Stage == 3000)
-    {
-        if (!roundScreenShown)
-        {
+    else if (TankKilled && !HelicopterGenerated && Current_Stage == 3000) {
+        if (!roundScreenShown) {
             missions->setRoundNumber(3);
             missions->setEnabled(true);
             gs->setEnabled(false);
             roundScreenShown = true;
         }
-
         ListofObjects.add(new Helicopter(gWindow, gRenederer, 1440, 50, &ListofObjects));
         HelicopterGenerated = true;
     }
-    else if (HelicopterKilled && Current_Stage == 3000)
-    {
+    else if (HelicopterKilled && Current_Stage == 3000) {
         free = false;
         roundScreenShown = false;
+        Current_Stage = 4000;
+        showingNPCDialogue = true;
+        currentDialogueSet = 2; // Stage 3 -> 4 dialogue
+        currentDialogueLine = 0;
+        gs->setEnabled(false);
     }
-    else if (HelicopterKilled && !FinalEnemiesGenerated)
-    {
+    else if (HelicopterKilled && !FinalEnemiesGenerated) {
         ListofObjects.add(new Enemy(gWindow, gRenederer, 1840, &ListofObjects, 200));
         ListofObjects.add(new Enemy(gWindow, gRenederer, 2040, &ListofObjects, 100));
         ListofObjects.add(new Enemy(gWindow, gRenederer, 2300, &ListofObjects, 150));
@@ -322,8 +378,7 @@ void Game::GameLogic()
         ListofObjects.add(new Enemy(gWindow, gRenederer, 2840, &ListofObjects, 200));
         FinalEnemiesGenerated = true;
     }
-    else if (FinalEnemiesGenerated && EnemyKillCount >= 18 && !BossGenerated && Current_Stage == 4000)
-    {
+    else if (FinalEnemiesGenerated && EnemyKillCount >= 3 && !BossGenerated && Current_Stage == 4000) {
         ListofObjects.add(new Boss(gWindow, gRenederer, 10, 10, &ListofObjects));
         BossGenerated = true;
     }
@@ -439,18 +494,28 @@ bool Game::EventController()
             menu->setEnabled(true);
         }
     }
-    else if (menu->IsEnable())
-    {
-        if (menu->getButtonPresed() == 0)
-        {
-            if (win->IsEnable())
-                win->setEnabled(false);
-            if (lose->IsEnable())
-                lose->setEnabled(false);
-
+    else if (inCutscene && e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN) {
+        // Clean up current scene texture
+        if (currentCutscene >= 0 && cutsceneTextures[currentCutscene]) {
+            SDL_DestroyTexture(cutsceneTextures[currentCutscene]);
+            cutsceneTextures[currentCutscene] = nullptr;
+        }
+        
+        currentCutscene++;
+        if (currentCutscene >= 12) {
+            EndCutscene();
+        }
+        else {
+            LoadCurrentCutscene();
+        }
+    }
+    else if (menu->IsEnable()) {
+        if (menu->getButtonPresed() == 0) { // Start button
+            if (win->IsEnable()) win->setEnabled(false);
+            if (lose->IsEnable()) lose->setEnabled(false);
             hero->setAlive(true);
-            gs->setEnabled(true);
             menu->setEnabled(false);
+            StartCutscene(); // Start cutscene instead of going directly to game
         }
         else if (menu->getButtonPresed() == 1)
         {
@@ -512,11 +577,24 @@ bool Game::EventController()
             menu->setEnabled(true);
         }
     }
+    else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN) {
+        currentDialogueLine++;
+        if (currentDialogueLine >= dialogueLengths[currentDialogueSet]) {
+            showingNPCDialogue = false;
+                gs->setEnabled(true);
+            }
+        }
+        return true;
+    
     return true;
 }
 
-Game::~Game()
-{
+Game::~Game() {
+    for (int i = 0; i < 7; i++) {
+        if (cutsceneTextures[i]) {
+            SDL_DestroyTexture(cutsceneTextures[i]);
+        }
+    }
     delete hero;
     delete splashScreen;
     delete win;
@@ -526,7 +604,9 @@ Game::~Game()
     delete pauseScreen;
     delete missions;
     delete themeMusic;
-
+    SDL_DestroyTexture(npcBackgroundTexture);
+    TTF_CloseFont(npcFont);
+    TTF_Quit();
     SDL_DestroyRenderer(gRenederer);
     SDL_DestroyWindow(gWindow);
     SDL_Quit();
