@@ -72,7 +72,7 @@ void Boss::CollisionImpact(GameObjects* CollidedWith)
         if (SDL_HasIntersection(&collide, &thisRect))
         {
             CollidedWith->setAlive(false);
-            health.decrease(25);
+            health.decrease(1);
         }
     }
 }
