@@ -18,10 +18,10 @@ Hero::Hero(SDL_Window* gWindow, SDL_Renderer* grenderer, List<GameObjects*>* lst
     HeroStates[0] = new Sprites(gWindow, grenderer, "data\\hero\\standing.png", 30, 1200 / 30, 44, dRect, "data\\hero\\standing.png", true);
     HeroStates[2] = new Sprites(gWindow, grenderer, "data\\hero\\fire.png", 13, 4000 / 13, 191, dRect, "data\\hero\\standing.png", true);
     HeroStates[3] = new Sprites(gWindow, grenderer, "data\\hero\\fireUp.png", 9, 810 / 9, 118, dRect, "data\\hero\\standing.png", true);
-    HeroStates[4] = new Sprites(gWindow, grenderer, "data\\hero\\sliding.png", 8, 400 / 8, 50, dRect, "data\\hero\\standing.png", true); // Sliding animation
+    HeroStates[4] = new Sprites(gWindow, grenderer, "data\\hero\\crouch.png", 8, 400 / 8, 50, dRect, "data\\hero\\standing.png", true); // Crouch animation
 
     ground = dRect->y + dRect->h;
-    flip = SDL_FLIP_NONE; // Initialize
+    flip = SDL_FLIP_NONE;
     moved = false;
     Alive = true;
     collided = false;
@@ -34,9 +34,9 @@ Hero::Hero(SDL_Window* gWindow, SDL_Renderer* grenderer, List<GameObjects*>* lst
     movex = 0;
     onground = true;
     cs = 0;
-    sliding = false; // Initialize sliding state
-    jumpCount = 0;   // Initialize jump count
-    slideCooldown = 0; // Initialize slide cooldown
+    jumpCount = 0;
+    crouching = false;
+    normalHeight = dRect->h;
 
     printf("Position: (%d, %d), Size: (%d, %d)\n", get_Position().get_X(), get_Position().get_Y(), get_Size().get_X(), get_Size().get_Y());
 }
@@ -102,7 +102,7 @@ void Hero::render(int frames)
             movey = 0;
     }
 
-    if (!(gm_ptr->free)) // Now works with Game.h included
+    if (!(gm_ptr->free))
     {
         if ((HeroStates[cs]->get_Position()).get_X() + (HeroStates[cs]->get_Size()).get_X() + movex >= 640 || 
             (HeroStates[cs]->get_Position()).get_X() + (HeroStates[cs]->get_Size()).get_X() + movex <= 10)
@@ -120,13 +120,15 @@ void Hero::render(int frames)
 
     if (Alive)
     {
-        if (sliding)
+        if (crouching)
         {
-            cs = 4; // Sliding animation state
+            cs = 4;
             HeroStates[cs]->render(frames, flip);
+            dRect->h = normalHeight / 2;
         }
         else if (!fire)
         {
+            dRect->h = normalHeight;
             if (movex != 0 || movey != 0 || running)
             {
                 cs = 1;
@@ -140,6 +142,7 @@ void Hero::render(int frames)
         }
         else
         {
+            dRect->h = normalHeight;
             if (shootUp)
             {
                 cs = 3;
@@ -178,31 +181,20 @@ void Hero::EventsController(SDL_Event* e)
     }
     const Uint8* currentKeyStates = SDL_GetKeyboardState(NULL);
 
-    // Sliding with Ctrl key
-    if (currentKeyStates[SDL_SCANCODE_LCTRL] || currentKeyStates[SDL_SCANCODE_RCTRL])
+    // Crouching with C key
+    if (currentKeyStates[SDL_SCANCODE_C])
     {
-        if (onground && !sliding && slideCooldown == 0)
-        {
-            sliding = true;
-            slideCooldown = 60; // Set a cooldown for sliding (adjust as needed)
-            movex *= 2; // Increase horizontal speed while sliding
-        }
+        crouching = true;
     }
     else
     {
-        sliding = false;
-    }
-
-    // Decrease slide cooldown
-    if (slideCooldown > 0)
-    {
-        slideCooldown--;
+        crouching = false;
     }
 
     // Jump with Space Bar (double jump)
     if (currentKeyStates[SDL_SCANCODE_SPACE])
     {
-        if (jumpCount < 2) // Allow double jump
+        if (jumpCount < 2)
         {
             jump = true;
             movey = -30;
@@ -224,7 +216,7 @@ void Hero::EventsController(SDL_Event* e)
         flip = SDL_FLIP_HORIZONTAL;
         running = true;
         jumping = true;
-        movex = -6;
+        movex = crouching ? -3 : -6; // Half speed when crouching
     }
     // Move right with D
     else if (currentKeyStates[SDL_SCANCODE_D])
@@ -232,46 +224,45 @@ void Hero::EventsController(SDL_Event* e)
         running = true;
         flip = SDL_FLIP_NONE;
         jumping = true;
-        movex = 5;
+        movex = crouching ? 3 : 5; // Half speed when crouching
         moved = true;
     }
     else
     {
         running = false;
-        movex = 0; jumping = true;
+        movex = 0;
+        jumping = true;
         moved = false;
     }
 
-    // Fire horizontally with H (continuous firing when held down)
+    // Fire horizontally with H (continuous firing)
     if (currentKeyStates[SDL_SCANCODE_H])
     {
-        shootUp = false; // Fire horizontally
-        fire = true;     // Enable firing state
+        shootUp = false;
+        fire = true;
 
-        // Add a small delay between shots to avoid spamming bullets too quickly
         static int fireDelay = 0;
         if (fireDelay == 0)
         {
             if (!flip)
-                bullets->add(new Bullet(gWindow, grenderer, (this->get_Position()).get_X() + (this->get_Size()).get_X(), (this->get_Position()).get_Y() + 50, 10, 0, "HEROBULLET"));
+                bullets->add(new Bullet(gWindow, grenderer, (this->get_Position()).get_X() + (this->get_Size()).get_X(), (this->get_Position()).get_Y() + (crouching ? 25 : 50), 10, 0, "HEROBULLET"));
             else
-                bullets->add(new Bullet(gWindow, grenderer, (this->get_Position()).get_X(), (this->get_Position()).get_Y() + 50, -10, 0, "HEROBULLET"));
+                bullets->add(new Bullet(gWindow, grenderer, (this->get_Position()).get_X(), (this->get_Position()).get_Y() + (crouching ? 25 : 50), -10, 0, "HEROBULLET"));
 
-            sound[0]->Play(); // Play firing sound
-            fireDelay = 10;   // Set a delay between shots (adjust as needed)
+            sound[0]->Play();
+            fireDelay = 10;
         }
         else
         {
-            fireDelay--; // Decrease the delay counter
+            fireDelay--;
         }
     }
-    // Fire upward with K (continuous firing when held down)
+    // Fire upward with K (continuous firing)
     else if (currentKeyStates[SDL_SCANCODE_K])
     {
-        shootUp = true; // Fire upward
-        fire = true;    // Enable firing state
+        shootUp = true;
+        fire = true;
 
-        // Add a small delay between shots to avoid spamming bullets too quickly
         static int fireDelay = 0;
         if (fireDelay == 0)
         {
@@ -280,18 +271,18 @@ void Hero::EventsController(SDL_Event* e)
             else
                 bullets->add(new Bullet(gWindow, grenderer, (this->get_Position()).get_X() + dRect->w - 50, (this->get_Position()).get_Y(), 0, -10, "HEROBULLET"));
 
-            sound[0]->Play(); // Play firing sound
-            fireDelay = 10;   // Set a delay between shots (adjust as needed)
+            sound[0]->Play();
+            fireDelay = 10;
         }
         else
         {
-            fireDelay--; // Decrease the delay counter
+            fireDelay--;
         }
     }
     else
     {
-        shootUp = false; // Reset shooting direction when neither H nor K is pressed
-        fire = false;    // Disable firing state
+        shootUp = false;
+        fire = false;
     }
 }
 
@@ -444,7 +435,7 @@ void Hero::CollisionImpact(GameObjects* CollidedWith)
 void SaveHeroToFile(FILE* file, Hero* hero)
 {
     fprintf(file, "---HERO---\n");
-    fprintf(file, "%d\n", (int)hero->flip); // Cast SDL_RendererFlip to int
+    fprintf(file, "%d\n", (int)hero->flip);
     fprintf(file, "%d\n", hero->moved ? 1 : 0); 
     fprintf(file, "%d\n", hero->Alive ? 1 : 0);
     fprintf(file, "%d\n", hero->collided ? 1 : 0);
@@ -467,7 +458,7 @@ void LoadHeroFromFile(FILE* file, Hero* hero)
 {
     int temp;
     fscanf(file, "%*s");  
-    fscanf(file, "%d", &temp); hero->flip = (SDL_RendererFlip)temp; // Cast int back to SDL_RendererFlip
+    fscanf(file, "%d", &temp); hero->flip = (SDL_RendererFlip)temp;
     fscanf(file, "%d", &temp); hero->moved = (temp != 0); 
     fscanf(file, "%d", &temp); hero->Alive = (temp != 0);
     fscanf(file, "%d", &temp); hero->collided = (temp != 0);
