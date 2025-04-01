@@ -1,4 +1,5 @@
 #include "Enemy.h"
+#include "EnemyBullet.h"
 
 Enemy::Enemy(SDL_Window* gWindow, SDL_Renderer* grenderer, int posX, List<GameObjects*>* bullets, int delay)
 {
@@ -9,8 +10,8 @@ Enemy::Enemy(SDL_Window* gWindow, SDL_Renderer* grenderer, int posX, List<GameOb
     dRect = new SDL_Rect{ posX, 550, 150, 100 };
     sound[0] = new SoundEffects("data\\Enemy\\fire.wav");
     sound[1] = new SoundEffects("data\\Enemy\\dead.wav");
-    EnemyStates[0] = new Sprites(gWindow, grenderer, "data\\Enemy\\Images\\firing1.png", 9, 396 / 9, 40, dRect, "Enemy", true);
-    EnemyStates[1] = new Sprites(gWindow, grenderer, "data\\Enemy\\Images\\Running1.png", 12, 396 / 12, 42, dRect, "Enemy", true);
+    EnemyStates[0] = new Sprites(gWindow, grenderer, "data\\Enemy\\Images\\atk.png", 16, 752 / 16, 49, dRect, "Enemy", true);
+    EnemyStates[1] = new Sprites(gWindow, grenderer, "data\\Enemy\\Images\\run.png", 7, 294 / 7, 48, dRect, "Enemy", true);
     hero = (Hero*)((bullets->getStart())->value);
 }
 
@@ -113,32 +114,28 @@ bool Enemy::IsAlive()
     return alive;
 }
 
-bool Enemy::fire(int frame)
-{
-    if (!(frame % delay))
-    {
+bool Enemy::fire(int frame) {
+    if (!(frame % delay)) {
         count = 50;
         fired = true;
         sound[0]->Play();
         int Hx = (hero->get_Position()).get_X();
         int Ex = get_Position().get_X();
-        int xDiff = (hero->get_Position().get_X() - (this->get_Position().get_X()));
-        if (xDiff)
-        {
-            float slope = ((hero->get_Position().get_Y()) - (this->get_Position().get_Y())) / (hero->get_Position().get_X() - (this->get_Position().get_X()));
+        int xDiff = (hero->get_Position().get_X() - (this->get_Position()).get_X());
+        if (xDiff) {
+            float slope = ((hero->get_Position().get_Y()) - (this->get_Position().get_Y())) / (float)xDiff;
             if (Ex - Hx > 0)
-                bullets->add(new Bullet(gWindow, grenderer, (EnemyStates[cs]->get_Position()).get_X(), (EnemyStates[cs]->get_Position()).get_Y() + 25, -13, -slope, "ENEMYBULLET"));
+                bullets->add(new EnemyBullet(gWindow, grenderer, (EnemyStates[cs]->get_Position()).get_X(), (EnemyStates[cs]->get_Position()).get_Y() + 25, -13, -slope, "ENEMYBULLET"));
             else
-                bullets->add(new Bullet(gWindow, grenderer, (EnemyStates[cs]->get_Position()).get_X() + dRect->w, (EnemyStates[cs]->get_Position()).get_Y() + 25, 13, slope, "ENEMYBULLET"));
+                bullets->add(new EnemyBullet(gWindow, grenderer, (EnemyStates[cs]->get_Position()).get_X() + dRect->w, (EnemyStates[cs]->get_Position()).get_Y() + 25, 13, slope, "ENEMYBULLET"));
             return true;
-        }
-        else
-        {
-            hero->setAlive(false);
+        } else {
+            // Instead of killing instantly, rely on melee collision damage
+            printf("Enemy aligned with hero at x=%d, relying on collision damage\n", Hx);
+            // Optionally increase melee damage frequency here if desired
         }
     }
-    if (count == 0)
-    {
+    if (count == 0) {
         fired = false;
     }
     return false;

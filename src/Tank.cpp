@@ -77,7 +77,7 @@ void Tank::CollisionImpact(GameObjects* CollidedWith) {
         SDL_Rect collide = { (CollidedWith->get_Position()).get_X(), (CollidedWith->get_Position()).get_Y(), (CollidedWith->get_Size()).get_X(), (CollidedWith->get_Size()).get_Y() };
         if (SDL_HasIntersection(&collide, dRect)) {
             CollidedWith->setAlive(false);
-            health.decrease(1);
+            health.decrease(4);
             if (health.get_Health() == 0) {
                 sounds[0]->Play();
                 if (counter == 0) {
