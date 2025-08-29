@@ -14,14 +14,13 @@ Hero::Hero(SDL_Window* gWindow, SDL_Renderer* grenderer, List<GameObjects*>* lst
     dRect = new SDL_Rect{ 1, 550, 200, 100 };
     sound[0] = new SoundEffects("data\\hero\\sounds\\fire.wav");
     sound[1] = new SoundEffects("data\\hero\\sounds\\effected.wav");
-    HeroStates[0] = new Sprites(gWindow, grenderer, "data\\hero\\standby.png", 8, 432 / 8, 69, dRect, "data\\hero\\standing.png", true);
-    HeroStates[1] = new Sprites(gWindow, grenderer, "data\\hero\\run.png", 13, 767 / 13, 69, dRect, "data\\hero\\standing.png", true);
-    HeroStates[2] = new Sprites(gWindow, grenderer, "data\\hero\\shoot.png", 2, 94 / 2, 69, dRect, "data\\hero\\standing.png", true);
-    HeroStates[3] = new Sprites(gWindow, grenderer, "data\\hero\\shootup.png", 2, 140 / 2, 69, dRect, "data\\hero\\standing.png", true);
-    HeroStates[4] = new Sprites(gWindow, grenderer, "data\\hero\\crouching.png", 8, 400 / 8, 50, dRect, "data\\hero\\standing.png", true); // Changed to crouching animation
+    HeroStates[1] = new Sprites(gWindow, grenderer, "data\\hero\\running.png", 12, 576 / 12, 41, dRect, "data\\hero\\standing.png", true);
+    HeroStates[0] = new Sprites(gWindow, grenderer, "data\\hero\\standing.png", 30, 1200 / 30, 44, dRect, "data\\hero\\standing.png", true);
+    HeroStates[2] = new Sprites(gWindow, grenderer, "data\\hero\\fire.png", 13, 4000 / 13, 191, dRect, "data\\hero\\standing.png", true);
+    HeroStates[3] = new Sprites(gWindow, grenderer, "data\\hero\\fireUp.png", 9, 810 / 9, 118, dRect, "data\\hero\\standing.png", true);
 
     ground = dRect->y + dRect->h;
-    flip = SDL_FLIP_NONE;
+    flip = SDL_FLIP_NONE; // Initialize
     moved = false;
     Alive = true;
     collided = false;
@@ -34,24 +33,8 @@ Hero::Hero(SDL_Window* gWindow, SDL_Renderer* grenderer, List<GameObjects*>* lst
     movex = 0;
     onground = true;
     cs = 0;
-    crouching = false; // Changed from sliding to crouching
-    jumpCount = 0;
-    crouchCooldown = 0; // Changed from slideCooldown to crouchCooldown
 
     printf("Position: (%d, %d), Size: (%d, %d)\n", get_Position().get_X(), get_Position().get_Y(), get_Size().get_X(), get_Size().get_Y());
-}
-
-Hero::~Hero()
-{
-    delete dRect;
-    for (int i = 0; i < 5; ++i)
-    {
-        delete HeroStates[i];
-    }
-    for (int i = 0; i < 2; ++i)
-    {
-        delete sound[i];
-    }
 }
 
 bool Hero::IsMoved()
@@ -95,19 +78,14 @@ void Hero::render(int frames)
         movey = 9;
         if ((this->get_Position()).get_Y() + (this->get_Size()).get_Y() >= ground)
         {
-            movey = 0; 
-            jump = false; 
-            jumping = false; 
-            dRect->y = 550;
+            movey = 0; jump = false; jumping = false; dRect->y = 550;
             onground = true;
-            crouching = false; // Auto-cancel crouching on landing
-            jumpCount = 0; // Reset jump count on landing
         }
         if (collided)
             movey = 0;
     }
 
-    if (!(gm_ptr->free))
+    if (!(gm_ptr->free)) // Now works with Game.h included
     {
         if ((HeroStates[cs]->get_Position()).get_X() + (HeroStates[cs]->get_Size()).get_X() + movex >= 640 || 
             (HeroStates[cs]->get_Position()).get_X() + (HeroStates[cs]->get_Size()).get_X() + movex <= 10)
@@ -125,41 +103,31 @@ void Hero::render(int frames)
 
     if (Alive)
     {
-        if (crouching)
+        if (!fire)
         {
-            cs = 4; // Crouching animation state
-            HeroStates[cs]->render(frames, flip);
-            dRect->h = 50; // Reduce height while crouching
-        }
-        else
-        {
-            dRect->h = 100; // Restore normal height
-            if (!fire)
+            if (movex != 0 || movey != 0 || running)
             {
-                if (movex != 0 || movey != 0 || running)
-                {
-                    cs = 1;
-                    HeroStates[cs]->render(frames, flip);
-                }
-                else
-                {
-                    cs = 0;
-                    HeroStates[cs]->render(frames * 2, flip);
-                }
+                cs = 1;
+                HeroStates[cs]->render(frames, flip);
             }
             else
             {
-                if (shootUp)
-                {
-                    cs = 3;
-                    HeroStates[cs]->render(frames, flip); // Animate firing up
-                }
-                else
-                {
-                    cs = 2;
-                    count--;
-                    HeroStates[cs]->render(frames, flip); // Animate firing horizontally
-                }
+                cs = 0;
+                HeroStates[cs]->render(frames * 2, flip);
+            }
+        }
+        else
+        {
+            if (shootUp)
+            {
+                cs = 3;
+                HeroStates[cs]->render(0, flip);
+            }
+            else
+            {
+                cs = 2;
+                count--;
+                HeroStates[cs]->render(0, flip);
             }
         }
         if (count == 0)
@@ -169,7 +137,7 @@ void Hero::render(int frames)
     }
 
     Move(movex, movey);
-    health.display(dRect->x + 50, dRect->y - 10);
+    health.display(dRect->x, dRect->y - 10);
 }
 
 void Hero::Move(int x, int y)
@@ -187,113 +155,68 @@ void Hero::EventsController(SDL_Event* e)
         counter--;
     }
     const Uint8* currentKeyStates = SDL_GetKeyboardState(NULL);
-
-    // Crouching with Ctrl key
-    if (currentKeyStates[SDL_SCANCODE_LCTRL] || currentKeyStates[SDL_SCANCODE_RCTRL])
+    if (currentKeyStates[SDL_SCANCODE_UP])
     {
-        if (onground && !jumping)
+        if (!jumping)
         {
-            crouching = true;
-            if (movex > 0) movex = 1;  // Quarter speed while crouching (positive)
-            else if (movex < 0) movex = -1; // Quarter speed while crouching (negative)
-        }
-    }
-    else
-    {
-        crouching = false;
-    }
-
-    // Jump with Space Bar (double jump limited to once per ground contact)
-    if (currentKeyStates[SDL_SCANCODE_SPACE])
-    {
-        if (onground && jumpCount == 0) // First jump
-        {
-            jump = true;
-            movey = -30;
-            jumping = true;
-            onground = false;
-            crouching = false; // Auto-cancel crouching on jump
-            jumpCount = 1;
-        }
-        else if (!onground && jumpCount == 1) // Second jump (double jump)
-        {
-            jump = true;
-            movey = -30;
-            jumping = true;
-            jumpCount = 2; // Prevent further jumps until landing
+            jump = true; movey = -30; jumping = true; onground = false;
         }
     }
 
-    // Move left with A
-    if (currentKeyStates[SDL_SCANCODE_A])
+    if (currentKeyStates[SDL_SCANCODE_LEFT])
     {
         flip = SDL_FLIP_HORIZONTAL;
         running = true;
         jumping = true;
-        movex = crouching ? -1 : -6; // Quarter speed if crouching
+        movex = -6;
     }
-    // Move right with D
-    else if (currentKeyStates[SDL_SCANCODE_D])
+    else if (currentKeyStates[SDL_SCANCODE_RIGHT])
     {
         running = true;
         flip = SDL_FLIP_NONE;
         jumping = true;
-        movex = crouching ? 1 : 5; // Quarter speed if crouching
+        movex = 5;
         moved = true;
     }
     else
     {
         running = false;
-        movex = 0;
+        movex = 0; jumping = true;
         moved = false;
     }
 
-    // Fire horizontally with H
-    if (currentKeyStates[SDL_SCANCODE_H])
-    {
-        shootUp = false;
-        fire = true;
-        static int fireDelay = 0;
-        if (fireDelay == 0)
-        {
-            if (!flip)
-                bullets->add(new Bullet(gWindow, grenderer, (this->get_Position()).get_X() + (this->get_Size()).get_X(), (this->get_Position()).get_Y() + (crouching ? 25 : 50), 10, 0, "HEROBULLET"));
-            else
-                bullets->add(new Bullet(gWindow, grenderer, (this->get_Position()).get_X(), (this->get_Position()).get_Y() + (crouching ? 25 : 50), -10, 0, "HEROBULLET"));
-            sound[0]->Play();
-            fireDelay = 10;
-            count = 10; // Reset count for animation
-        }
-        else
-        {
-            fireDelay--;
-        }
-    }
-    // Fire upward with K
-    else if (currentKeyStates[SDL_SCANCODE_K])
+    if (currentKeyStates[SDL_SCANCODE_X])
     {
         shootUp = true;
-        fire = true;
-        static int fireDelay = 0;
-        if (fireDelay == 0)
-        {
-            if (!flip)
-                bullets->add(new Bullet(gWindow, grenderer, (this->get_Position()).get_X() + 50, (this->get_Position()).get_Y(), 0, -10, "HEROBULLET"));
-            else
-                bullets->add(new Bullet(gWindow, grenderer, (this->get_Position()).get_X() + dRect->w - 50, (this->get_Position()).get_Y(), 0, -10, "HEROBULLET"));
-            sound[0]->Play();
-            fireDelay = 10;
-            count = 10; // Reset count for animation
-        }
-        else
-        {
-            fireDelay--;
-        }
     }
     else
     {
         shootUp = false;
-        if (!currentKeyStates[SDL_SCANCODE_H]) fire = false; // Only stop firing if neither H nor K is pressed
+    }
+
+    if (e->key.keysym.sym == SDLK_SPACE && e->type == SDL_KEYUP && e->key.repeat == 0)
+    {
+        count = 20;
+        if (shootUp)
+        {
+            fire = true;
+            if (!flip)
+                bullets->add(new Bullet(gWindow, grenderer, (this->get_Position()).get_X() + 50, (this->get_Position()).get_Y(), 0, -10, "HEROBULLET"));
+            else
+                bullets->add(new Bullet(gWindow, grenderer, (this->get_Position()).get_X() + dRect->w - 50, (this->get_Position()).get_Y(), 0, -10, "HEROBULLET"));
+
+            sound[0]->Play();
+        }
+        else
+        {
+            fire = true;
+            if (!flip)
+                bullets->add(new Bullet(gWindow, grenderer, (this->get_Position()).get_X() + (this->get_Size()).get_X(), (this->get_Position()).get_Y() + 50, 10, 0, "HEROBULLET"));
+            else
+                bullets->add(new Bullet(gWindow, grenderer, (this->get_Position()).get_X(), (this->get_Position()).get_Y() + 50, -10, 0, "HEROBULLET"));
+
+            sound[0]->Play();
+        }
     }
 }
 
@@ -344,7 +267,7 @@ void Hero::CollisionImpact(GameObjects* CollidedWith)
         SDL_Rect BossRect = { (CollidedWith->get_Position()).get_X(), (CollidedWith->get_Position()).get_Y(), (CollidedWith->get_Size()).get_X(), (CollidedWith->get_Size()).get_Y() - 100 };
         if (SDL_HasIntersection(&BossRect, dRect))
         {
-            health.decrease(1);
+            health.decrease(3);
             sound[1]->Play();
             jump = true; movey = 3; jumping = true; onground = false; movex = 0;
 
@@ -359,7 +282,7 @@ void Hero::CollisionImpact(GameObjects* CollidedWith)
         if (SDL_HasIntersection(&collide, dRect))
         {
             CollidedWith->CollisionImpact(this);
-            health.decrease(1);
+            health.decrease(20);
             sound[1]->Play();
             if (health.get_Health() == 0)
             {
@@ -372,7 +295,7 @@ void Hero::CollisionImpact(GameObjects* CollidedWith)
     {
         if (SDL_HasIntersection(&collide, dRect))
         {
-            health.decrease(1);
+            health.decrease(3);
             sound[1]->Play();
 
             if (dRect->x > collide.x)
@@ -446,7 +369,7 @@ void Hero::CollisionImpact(GameObjects* CollidedWith)
 void SaveHeroToFile(FILE* file, Hero* hero)
 {
     fprintf(file, "---HERO---\n");
-    fprintf(file, "%d\n", (int)hero->flip);
+    fprintf(file, "%d\n", (int)hero->flip); // Cast SDL_RendererFlip to int
     fprintf(file, "%d\n", hero->moved ? 1 : 0); 
     fprintf(file, "%d\n", hero->Alive ? 1 : 0);
     fprintf(file, "%d\n", hero->collided ? 1 : 0);
@@ -463,14 +386,13 @@ void SaveHeroToFile(FILE* file, Hero* hero)
     fprintf(file, "%d\n", hero->dRect->x);
     fprintf(file, "%d\n", hero->dRect->y);
     fprintf(file, "%d\n", hero->health.get_Health());
-    fprintf(file, "%d\n", hero->crouching ? 1 : 0); // Save crouching state
 }
 
 void LoadHeroFromFile(FILE* file, Hero* hero)
 {
     int temp;
     fscanf(file, "%*s");  
-    fscanf(file, "%d", &temp); hero->flip = (SDL_RendererFlip)temp;
+    fscanf(file, "%d", &temp); hero->flip = (SDL_RendererFlip)temp; // Cast int back to SDL_RendererFlip
     fscanf(file, "%d", &temp); hero->moved = (temp != 0); 
     fscanf(file, "%d", &temp); hero->Alive = (temp != 0);
     fscanf(file, "%d", &temp); hero->collided = (temp != 0);
@@ -486,8 +408,18 @@ void LoadHeroFromFile(FILE* file, Hero* hero)
     fscanf(file, "%d", &hero->cs);
     fscanf(file, "%d", &hero->dRect->x);
     fscanf(file, "%d", &hero->dRect->y);
-    int health;
-    fscanf(file, "%d", &health);
-    hero->health.set_Health(health);
-    fscanf(file, "%d", &temp); hero->crouching = (temp != 0); // Load crouching state
+    fscanf(file, "%d", &temp); hero->health.set_Health(temp); // Use setter
+}
+
+Hero::~Hero()
+{
+    for (int i = 0; i < 2; i++)
+    {
+        delete sound[i];
+    }
+    for (int i = 0; i < 4; i++)
+    {
+        delete HeroStates[i];
+    }
+    delete dRect;
 }
