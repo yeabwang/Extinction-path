@@ -15,6 +15,10 @@ GameScreen::GameScreen(SDL_Event* e, SDL_Window* gWindow, SDL_Renderer* gRendere
     hero = h;
     Size.set_X(width);   
     Size.set_Y(height);  
+    backgroundTexture = IMG_LoadTexture(gRenderer, Path); // Initialize backgroundTexture
+    if (!backgroundTexture) {
+        printf("Failed to load background texture! SDL_Error: %s\n", SDL_GetError());
+    }
 }
 
 bool GameScreen::IsMoved()
@@ -74,8 +78,22 @@ Point GameScreen::getSize()
     return Size;
 }
 
+SDL_Texture* GameScreen::getBackgroundTexture() {
+    return backgroundTexture;
+}
+
+void GameScreen::setBackgroundTexture(SDL_Texture* texture) {
+    if (backgroundTexture) {
+        SDL_DestroyTexture(backgroundTexture);
+    }
+    backgroundTexture = texture;
+}
+
 GameScreen::~GameScreen()
 {
     delete Background;
     delete ButtonsList[0];
+    if (backgroundTexture) {
+        SDL_DestroyTexture(backgroundTexture);
+    }
 }
